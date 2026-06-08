@@ -1,0 +1,20 @@
+{
+  "name": "openmedq-workspace",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "dev": "npm run dev -w frontend & npm run dev -w backend",
+    "build:frontend": "npm run build -w frontend",
+    "build:backend": "npm run build -w backend",
+    "typecheck:frontend": "npm run typecheck -w frontend",
+    "typecheck": "npm run typecheck:frontend"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260608.1"
+  }
+}

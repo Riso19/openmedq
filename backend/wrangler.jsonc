@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-08",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "CLERK_PUBLISHABLE_KEY": "",
+    "CLERK_SECRET_KEY": ""
+  },
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "openmedq-assets"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "openmedq-db",
+      "database_id": "YOUR_D1_DATABASE_ID_HERE"
+    }
+  ]
+}
