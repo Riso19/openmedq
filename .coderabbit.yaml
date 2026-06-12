@@ -1,0 +1,59 @@
+# .coderabbit.yaml
+language: "en-US"
+reviews:
+  profile: "assertive"
+
+# Path filters define the review scope
+path_filters:
+  # Ignore dependency directories
+  - "!node_modules/**"
+  - "!**/node_modules/**"
+  
+  # Ignore lockfiles and configurations
+  - "!package-lock.json"
+  - "!**/package-lock.json"
+  - "!*.lock"
+  - "!**/*.lock"
+  - "!tsconfig.json"
+  - "!**/tsconfig.json"
+  - "!eslint.config.js"
+  - "!metro.config.js"
+  
+  # Ignore builds, distributions, and local caches
+  - "!dist/**"
+  - "!**/dist/**"
+  - "!.expo/**"
+  - "!**/build/**"
+  
+  # Ignore iOS & Android native project directories
+  - "!ios/**"
+  - "!android/**"
+  
+  # Ignore heavy developer utility scripts
+  - "!backend/scripts/**"
+  - "!mobile/scripts/**"
+  - "!frontend/scripts/**"
+  
+  # Ignore database migration snapshots
+  - "!backend/drizzle/**"
+  
+  # Ignore project metadata and docs directories
+  - "!context/**"
+  
+  # Ignore raw PDF/study-data files
+  - "!data/**"
+  
+  # Ignore assets, public graphics, and badges
+  - "!**/badge/**"
+  - "!**/public/badge/**"
+  - "!**/assets/**"
+  - "!**/logo.png"
+
+  # Ignore non-code file patterns to prevent reviewing large datasets or documents
+  - "!**/*.json"
+  - "!**/*.pdf"
+  - "!**/*.png"
+  - "!**/*.svg"
+  - "!**/*.css"
+  - "!**/*.md"
+  - "!**/*.DS_Store"
