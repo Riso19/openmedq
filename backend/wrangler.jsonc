@@ -6,10 +6,7 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "vars": {
-    "CLERK_PUBLISHABLE_KEY": "",
-    "CLERK_SECRET_KEY": ""
-  },
+  "vars": {},
   "r2_buckets": [
     {
       "binding": "BUCKET",
@@ -20,7 +17,8 @@
     {
       "binding": "DB",
       "database_name": "openmedq-db",
-      "database_id": "YOUR_D1_DATABASE_ID_HERE"
+      "database_id": "6d66a9ab-fa71-4980-9b5a-af19da4c8e38",
+      "migrations_dir": "./drizzle"
     }
   ]
 }

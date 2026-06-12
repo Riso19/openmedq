@@ -1,1 +1,4 @@
 node_modules
+context/*
+!context/updates/
+.agents/

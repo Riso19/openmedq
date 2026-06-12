@@ -1,90 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rubik:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: hsl(220 33% 98%);
-  --foreground: hsl(224 71.4% 4.1%);
+  --background: #fffaf0;
+  --foreground: #0a0a0a;
   
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(224 71.4% 4.1%);
+  --clay-canvas: #fffaf0;
+  --clay-surface-soft: #faf5e8;
+  --clay-surface-card: #f5f0e0;
+  --clay-surface-strong: #ebe6d6;
+  --clay-ink: #0a0a0a;
+  --clay-body: #3a3a3a;
+  --clay-body-strong: #1a1a1a;
+  --clay-muted: #6a6a6a;
+  --clay-muted-soft: #9a9a9a;
+  --clay-hairline: #e5e5e5;
   
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(224 71.4% 4.1%);
+  --clay-pink: #ff4d8b;
+  --clay-teal: #1a3a3a;
+  --clay-lavender: #b8a4ed;
+  --clay-peach: #ffb084;
+  --clay-ochre: #e8b94a;
+  --clay-mint: #a4d4c5;
+  --clay-coral: #ff6b5a;
   
-  --primary: hsl(174 60% 41%);
-  --primary-foreground: hsl(0 0% 100%);
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
   
-  --secondary: hsl(220 14.3% 95.9%);
-  --secondary-foreground: hsl(220.9 39.3% 11%);
-  
-  --muted: hsl(220 14.3% 95.9%);
-  --muted-foreground: hsl(220 8.9% 46.1%);
-  
-  --accent: hsl(220 14.3% 95.9%);
-  --accent-foreground: hsl(220.9 39.3% 11%);
-  
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(210 20% 98%);
-
-  --border: hsl(220 13% 91%);
-  --input: hsl(220 13% 91%);
-  --ring: hsl(174 60% 41%);
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #0a0a0a;
   
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: hsl(222 47% 7%);
-  --foreground: hsl(210 20% 98%);
+  --background: #000000;
+  --foreground: #fffaf0;
   
-  --card: hsl(224 71.4% 11.2% / 0.5);
-  --card-foreground: hsl(210 20% 98%);
+  --clay-canvas: #000000;
+  --clay-surface-soft: #0c0c0c;
+  --clay-surface-card: #141414;
+  --clay-surface-strong: #222222;
+  --clay-ink: #fffaf0;
+  --clay-body: #faf5e8;
+  --clay-body-strong: #ffffff;
+  --clay-muted: #8a8a8a;
+  --clay-muted-soft: #666666;
+  --clay-hairline: #222222;
+
+  --card: #141414;
+  --card-foreground: #fffaf0;
   
-  --popover: hsl(224 71.4% 4.1%);
-  --popover-foreground: hsl(210 20% 98%);
+  --popover: #000000;
+  --popover-foreground: #fffaf0;
   
-  --primary: hsl(174 60% 51%);
-  --primary-foreground: hsl(222.2 47.4% 11.2%);
+  --primary: #fffaf0;
+  --primary-foreground: #000000;
   
-  --secondary: hsl(217.2 32.6% 17.5%);
-  --secondary-foreground: hsl(210 20% 98%);
+  --secondary: #0c0c0c;
+  --secondary-foreground: #fffaf0;
   
-  --muted: hsl(217.2 32.6% 17.5%);
-  --muted-foreground: hsl(215 20.2% 65.1%);
+  --muted: #8a8a8a;
+  --muted-foreground: #faf5e8;
   
-  --accent: hsl(217.2 32.6% 17.5%);
-  --accent-foreground: hsl(210 20% 98%);
+  --accent: #0c0c0c;
+  --accent-foreground: #fffaf0;
   
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(210 20% 98%);
-  
-  --border: hsl(217.2 32.6% 17.5%);
-  --input: hsl(217.2 32.6% 17.5%);
-  --ring: hsl(174 60% 51%);
+  --border: #222222;
+  --input: #222222;
+  --ring: #fffaf0;
+}
+
+/* Specific styling overrides for dark mode button/text behaviors */
+.dark .bg-clay-ink {
+  background-color: var(--clay-ink) !important;
+  color: var(--clay-canvas) !important;
+}
+.dark .bg-clay-ink:hover {
+  background-color: var(--clay-surface-strong) !important;
+  color: var(--clay-ink) !important;
+}
+.dark .bg-white {
+  background-color: var(--clay-surface-card) !important;
+  color: var(--clay-ink) !important;
+}
+.dark .bg-white:hover {
+  background-color: var(--clay-surface-soft) !important;
+}
+
+/* Ensure bg-white buttons/elements inside ALL colored cards (pink, teal, lavender, peach, ochre, mint) stay white with dark text */
+.dark .bg-clay-pink .bg-white,
+.dark .bg-clay-teal .bg-white,
+.dark .bg-clay-lavender .bg-white,
+.dark .bg-clay-peach .bg-white,
+.dark .bg-clay-ochre .bg-white,
+.dark .bg-clay-mint .bg-white {
+  background-color: #ffffff !important;
+  color: #0a0a0a !important;
+}
+.dark .bg-clay-pink .bg-white:hover,
+.dark .bg-clay-teal .bg-white:hover,
+.dark .bg-clay-lavender .bg-white:hover,
+.dark .bg-clay-peach .bg-white:hover,
+.dark .bg-clay-ochre .bg-white:hover,
+.dark .bg-clay-mint .bg-white:hover {
+  background-color: #faf5e8 !important;
+}
+
+/* Ensure bg-clay-ink buttons inside colored light cards stay dark with white text in dark mode */
+.dark .bg-clay-lavender .bg-clay-ink,
+.dark .bg-clay-peach .bg-clay-ink,
+.dark .bg-clay-ochre .bg-clay-ink,
+.dark .bg-clay-mint .bg-clay-ink {
+  background-color: #0a0a0a !important;
+  color: #ffffff !important;
+}
+.dark .bg-clay-lavender .bg-clay-ink:hover,
+.dark .bg-clay-peach .bg-clay-ink:hover,
+.dark .bg-clay-ochre .bg-clay-ink:hover,
+.dark .bg-clay-mint .bg-clay-ink:hover {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+}
+
+.dark .bg-clay-lavender,
+.dark .bg-clay-peach,
+.dark .bg-clay-ochre,
+.dark .bg-clay-mint {
+  color: #0a0a0a;
+  --foreground: #0a0a0a;
+  --clay-ink: #0a0a0a;
+  --clay-body: #3a3a3a;
+  --clay-body-strong: #1a1a1a;
+  --clay-muted: #6a6a6a;
+  --clay-muted-soft: #9a9a9a;
+  --clay-hairline: rgba(10, 10, 10, 0.15);
+  --border: rgba(10, 10, 10, 0.15);
+}
+
+.dark .bg-clay-lavender *,
+.dark .bg-clay-peach *,
+.dark .bg-clay-ochre *,
+.dark .bg-clay-mint * {
+  border-color: var(--border);
+}
+
+/* Restore dark mode theme variables for dark widgets nested inside light cards */
+.dark .bg-clay-canvas,
+.dark .bg-clay-surface-soft,
+.dark .bg-clay-surface-card,
+.dark .bg-clay-surface-strong {
+  --foreground: #fffaf0;
+  --clay-ink: #fffaf0;
+  --clay-body: #faf5e8;
+  --clay-body-strong: #ffffff;
+  --clay-muted: #8a8a8a;
+  --clay-muted-soft: #666666;
+  --clay-hairline: #222222;
+  --border: #222222;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  
+  --color-clay-canvas: var(--clay-canvas);
+  --color-clay-surface-soft: var(--clay-surface-soft);
+  --color-clay-surface-card: var(--clay-surface-card);
+  --color-clay-surface-strong: var(--clay-surface-strong);
+  --color-clay-ink: var(--clay-ink);
+  --color-clay-body: var(--clay-body);
+  --color-clay-body-strong: var(--clay-body-strong);
+  --color-clay-muted: var(--clay-muted);
+  --color-clay-muted-soft: var(--clay-muted-soft);
+  --color-clay-hairline: var(--clay-hairline);
+  
+  --color-clay-pink: var(--clay-pink);
+  --color-clay-teal: var(--clay-teal);
+  --color-clay-lavender: var(--clay-lavender);
+  --color-clay-peach: var(--clay-peach);
+  --color-clay-ochre: var(--clay-ochre);
+  --color-clay-mint: var(--clay-mint);
+  --color-clay-coral: var(--clay-coral);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --border-radius-lg: var(--radius);
-  --border-radius-md: calc(var(--radius) - 2px);
-  --border-radius-sm: calc(var(--radius) - 4px);
+  
+  --radius-clay-md: 12px;
+  --radius-clay-lg: 16px;
+  --radius-clay-xl: 24px;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-rubik: 'Rubik', sans-serif;
 }
 
 @layer base {
@@ -97,3 +208,226 @@
     font-family: 'Inter', sans-serif;
   }
 }
+
+/* Custom styles for landing page animations and aesthetics */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 10s ease-in-out infinite;
+}
+
+/* Clay custom components & depth */
+.hairline-card {
+  border: 1px solid var(--clay-hairline);
+  background-color: var(--clay-canvas);
+}
+
+.clay-shadow-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.clay-shadow-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 10, 10, 0.04);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--clay-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--clay-surface-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--clay-muted-soft);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Markdown Content Styles */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content p:not(:last-child) {
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content strong {
+  font-weight: 700;
+  color: var(--clay-ink);
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content code {
+  font-family: monospace;
+  font-size: 0.875em;
+  background-color: var(--clay-surface-soft);
+  padding: 0.125rem 0.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--clay-hairline);
+}
+
+.markdown-content pre {
+  background-color: var(--clay-surface-soft);
+  padding: 1rem;
+  border-radius: var(--radius-clay-md);
+  border: 1px solid var(--clay-hairline);
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.markdown-content a {
+  color: var(--clay-pink);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.markdown-content sub,
+.markdown-content sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.markdown-content sub {
+  bottom: -0.25em;
+}
+
+.markdown-content sup {
+  top: -0.5em;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-clay-md);
+  border: 1px solid var(--clay-hairline);
+  margin: 0.75rem 0;
+  cursor: zoom-in;
+}
+
+/* Lightbox Modal CSS Animations (Top layer using allow-discrete) */
+dialog.lightbox-dialog {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+  outline: none;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+dialog.lightbox-dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+dialog.lightbox-dialog {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out, display 0.2s allow-discrete, overlay 0.2s allow-discrete;
+}
+
+dialog.lightbox-dialog::backdrop {
+  background-color: rgba(10, 10, 10, 0);
+  backdrop-filter: blur(0px);
+  transition: background-color 0.2s ease-out, backdrop-filter 0.2s ease-out, display 0.2s allow-discrete, overlay 0.2s allow-discrete;
+}
+
+dialog.lightbox-dialog[open]::backdrop {
+  background-color: rgba(10, 10, 10, 0.45);
+  backdrop-filter: blur(8px);
+  @starting-style {
+    background-color: rgba(10, 10, 10, 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+/* Respect user preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  dialog.lightbox-dialog {
+    transform: none;
+    transition-duration: 0.1s;
+  }
+  @starting-style {
+    dialog.lightbox-dialog[open] {
+      transform: none;
+    }
+  }
+}
+

@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.sain19.openmedqworkspace"
+  },
+  "ios": {
+    "bundleIdentifier": "com.sain19.openmedqworkspace"
+  }
+}

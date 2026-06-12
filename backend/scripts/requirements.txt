@@ -1,0 +1,6 @@
+datasets
+pandas
+pyarrow
+tqdm
+fsspec
+huggingface-hub

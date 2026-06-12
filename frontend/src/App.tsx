@@ -1,122 +1,386 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { LandingPage } from './pages/landing/LandingPage';
+import { useAuth, SignIn, SignUp, useUser } from '@clerk/clerk-react';
+import { CustomModuleCreator, type CustomModuleConfig } from './pages/practice/CustomModuleCreator';
+import { PracticeSuite } from './pages/practice/PracticeSuite';
+import { Dashboard } from './pages/dashboard/Dashboard';
+import { Analytics } from './pages/dashboard/Analytics';
+import { SyncManager } from './lib/SyncManager';
+import { checkDailyStreakAndReset } from './lib/gamification';
+import { LevelResetModal } from './components/LevelResetModal';
+import { LeaderboardPage } from './pages/leaderboard/LeaderboardPage';
+import { LevelUpCelebrationModal } from './components/LevelUpCelebrationModal';
+
+import { useTheme } from './components/theme-provider';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { theme } = useTheme();
+  const [isDark, setIsDark] = useState<boolean>(false);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  useEffect(() => {
+    const checkDark = () => {
+      if (theme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      return theme === 'dark';
+    };
+    setIsDark(checkDark());
 
-      <div className="ticks"></div>
+    if (theme === 'system') {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = (e: MediaQueryListEvent) => {
+        setIsDark(e.matches);
+      };
+      media.addEventListener('change', listener);
+      return () => media.removeEventListener('change', listener);
+    }
+  }, [theme]);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  const clerkAppearance = {
+    variables: {
+      colorPrimary: isDark ? '#fffaf0' : '#0a0a0a',
+      colorBackground: isDark ? '#0a1a1a' : '#fffaf0',
+      colorText: isDark ? '#fffaf0' : '#0a0a0a',
+      colorTextSecondary: isDark ? '#7f8f8f' : '#6a6a6a',
+      colorInputBackground: isDark ? '#0a1a1a' : '#fffaf0',
+      colorInputText: isDark ? '#fffaf0' : '#0a0a0a',
+      colorBorder: isDark ? '#1f3535' : '#e5e5e5',
+      borderRadius: '12px',
+      fontFamily: 'Inter, sans-serif',
+    },
+    elements: {
+      card: 'shadow-none border-0 p-0 bg-transparent w-full',
+      headerTitle: 'font-rubik font-medium text-xl tracking-tight text-clay-ink text-center',
+      headerSubtitle: 'text-clay-muted text-xs text-center',
+      socialButtonsBlockButton: 'border border-clay-hairline bg-clay-canvas hover:bg-clay-surface-soft text-clay-ink rounded-clay-md shadow-none h-11',
+      formButtonPrimary: 'bg-clay-ink hover:bg-neutral-800 text-white font-bold h-11 rounded-clay-md transition-colors shadow-none',
+      formFieldInput: 'bg-clay-canvas border border-clay-hairline rounded-clay-md h-11 focus:border-clay-ink focus:ring-0',
+      footerActionLink: 'text-clay-pink hover:text-rose-600',
+      footerAction: 'text-clay-muted text-xs',
+      dividerLine: 'bg-clay-hairline',
+      dividerText: 'text-clay-muted text-[10px] uppercase font-bold tracking-wider',
+    }
+  };
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  const [view, setView] = useState<'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard'>('landing');
+
+  const [customModuleConfig, setCustomModuleConfig] = useState<CustomModuleConfig | null>(null);
+  const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'unsynced' | 'error'>('synced');
+  const [resumeActiveSession, setResumeActiveSession] = useState<boolean>(false);
+  const [lastMonthStats, setLastMonthStats] = useState<any | null>(null);
+  const [pendingLevelUp, setPendingLevelUp] = useState<any | null>(null);
+
+  // Run daily streak and month rollover checks on app load
+  useEffect(() => {
+    const runStreakCheck = async () => {
+      try {
+        await checkDailyStreakAndReset();
+        const pending = localStorage.getItem('openmedq_last_month_stats');
+        if (pending) {
+          setLastMonthStats(JSON.parse(pending));
+        }
+      } catch (err) {
+        console.warn("Failed to check daily streak.");
+      }
+    };
+    if (isLoaded) {
+      runStreakCheck();
+    }
+  }, [isLoaded]);
+
+  // Automatically transition to dashboard once authenticated (if in auth view)
+  useEffect(() => {
+    if (isLoaded && isSignedIn && view === 'auth') {
+      setView('dashboard');
+    }
+  }, [isLoaded, isSignedIn, view]);
+
+  // Check for pending level-up celebration when returning to dashboard
+  useEffect(() => {
+    if (view === 'dashboard') {
+      const pending = sessionStorage.getItem('openmedq_pending_levelup');
+      if (pending) {
+        setPendingLevelUp(JSON.parse(pending));
+      }
+    }
+  }, [view]);
+
+  const unsyncedCountRef = useRef<number>(0);
+
+  // Synchronize IndexedDB progress with Cloudflare D1 Backend via Clerk JWT
+  const triggerSync = useCallback(async () => {
+    if (isLoaded && isSignedIn) {
+      const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Aspirant' : 'Aspirant';
+      const email = user?.primaryEmailAddress?.emailAddress || '';
+      const profile = { displayName, email };
+      await SyncManager.syncWithD1(getToken, setSyncStatus, profile);
+    }
+  }, [isSignedIn, isLoaded, getToken, user]);
+
+  // Sync on page load
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      triggerSync();
+    }
+  }, [isSignedIn, isLoaded, triggerSync]);
+
+  // Sync periodically every 10 minutes if there are pending changes
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const interval = setInterval(() => {
+      if (unsyncedCountRef.current > 0) {
+        triggerSync();
+        unsyncedCountRef.current = 0;
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isSignedIn, triggerSync]);
+
+  // Sync when the page is hidden or backgrounded (user minimizes browser)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && unsyncedCountRef.current > 0) {
+        triggerSync();
+        unsyncedCountRef.current = 0;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [triggerSync]);
+
+  const startPracticeView = () => {
+    setView('dashboard');
+  };
+
+  const triggerAuthSimulate = () => {
+    setView('auth');
+  };
+
+  if (view === 'landing') {
+    return <LandingPage onStartPractice={startPracticeView} onSignIn={triggerAuthSimulate} />;
+  }
+
+  if (view === 'auth') {
+    return (
+      <div className="min-h-screen bg-clay-canvas text-clay-ink flex flex-col items-center justify-center p-6 font-sans relative">
+        <div className="absolute top-0 left-0 w-[50%] h-[50%] bg-clay-lavender/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-clay-peach/10 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-md flex flex-col items-center relative z-10">
+          <div className="flex items-center gap-3 mb-6 cursor-pointer group" onClick={() => setView('landing')}>
+            <img src="/logo.png" className="w-10 h-10 rounded-clay-md shadow-sm group-hover:scale-105 transition-transform duration-300 object-cover" alt="OpenMedQ Logo" />
+            <span className="text-xl font-bold tracking-tight text-clay-ink">OpenMedQ</span>
+          </div>
+
+          <div className="w-full bg-clay-canvas border border-clay-hairline rounded-clay-xl p-6 shadow-sm">
+            <div className="flex border-b border-clay-hairline bg-clay-surface-soft rounded-clay-md p-1 mb-6">
+              <button
+                onClick={() => setAuthTab('signin')}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider text-center rounded-clay-md transition-all cursor-pointer ${
+                  authTab === 'signin' ? 'bg-clay-canvas text-clay-ink shadow-sm' : 'text-clay-muted hover:text-clay-ink'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setAuthTab('signup')}
+                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider text-center rounded-clay-md transition-all cursor-pointer ${
+                  authTab === 'signup' ? 'bg-clay-canvas text-clay-ink shadow-sm' : 'text-clay-muted hover:text-clay-ink'
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+
+            {authTab === 'signin' ? (
+              <SignIn
+                routing="virtual"
+                signUpUrl="#"
+                appearance={clerkAppearance}
+              />
+            ) : (
+              <SignUp
+                routing="virtual"
+                signInUrl="#"
+                appearance={clerkAppearance}
+              />
+            )}
+
+            <button
+              onClick={() => setView('landing')}
+              className="w-full text-clay-muted hover:text-clay-ink text-xs font-bold mt-4 pt-4 border-t border-clay-hairline transition-colors duration-200 cursor-pointer"
+            >
+              Cancel and Return Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'stats') {
+    return (
+      <Analytics
+        onBack={() => setView('dashboard')}
+        onStartCustomModule={(config) => {
+          setCustomModuleConfig(config);
+          setView('custom_practice');
+        }}
+        onPracticeSubject={(subjectId, topicIds) => {
+          if (topicIds && topicIds.length > 0) {
+            setCustomModuleConfig({
+              subjectIds: [subjectId],
+              topicIds: topicIds,
+              status: 'ALL',
+              timerMode: 'STOPWATCH',
+              timerValue: 0,
+              limit: topicIds.length === 1 ? 10 : 15,
+            });
+          } else {
+            setCustomModuleConfig({
+              subjectIds: [subjectId],
+              status: 'ALL',
+              timerMode: 'STOPWATCH',
+              timerValue: 0,
+              limit: 20,
+              isStandard: true
+            });
+          }
+          setView('custom_practice');
+        }}
+        syncStatus={syncStatus}
+        onSyncForce={triggerSync}
+      />
+    );
+  }
+
+  if (view === 'dashboard') {
+    return (
+      <>
+      <Dashboard
+        onStartPractice={() => {
+          setCustomModuleConfig({
+            subjectIds: [5], // Pathology default
+            status: 'ALL',
+            timerMode: 'STOPWATCH',
+            timerValue: 0,
+            limit: 20,
+            isStandard: true
+          });
+          setView('custom_practice');
+        }}
+        onSignIn={triggerAuthSimulate}
+        onPracticeSubject={(subjectId, topicIds) => {
+          if (topicIds && topicIds.length > 0) {
+            setCustomModuleConfig({
+              subjectIds: [subjectId],
+              topicIds: topicIds,
+              status: 'ALL',
+              timerMode: 'STOPWATCH',
+              timerValue: 0,
+              limit: topicIds.length === 1 ? 10 : 15,
+            });
+          } else {
+            setCustomModuleConfig({
+              subjectIds: [subjectId],
+              status: 'ALL',
+              timerMode: 'STOPWATCH',
+              timerValue: 0,
+              limit: 20,
+              isStandard: true
+            });
+          }
+          setView('custom_practice');
+        }}
+        onStartCustomModule={(config, resume) => {
+          setCustomModuleConfig(config);
+          setResumeActiveSession(!!resume);
+          setView('custom_practice');
+        }}
+        onManageCustomModules={() => {
+          setView('custom_creator');
+        }}
+        onStartFSRSReview={() => {
+          setCustomModuleConfig({
+            subjectIds: [],
+            status: 'SPACED_REPETITION',
+            timerMode: 'STOPWATCH',
+            timerValue: 0,
+            limit: 20,
+          });
+          setView('custom_practice');
+        }}
+        onSyncForce={triggerSync}
+        syncStatus={syncStatus}
+        onViewStats={() => setView('stats')}
+        onViewLeaderboard={() => setView('leaderboard')}
+      />
+      <LevelResetModal
+        lastMonthStats={lastMonthStats}
+        onClose={() => {
+          localStorage.removeItem('openmedq_last_month_stats');
+          setLastMonthStats(null);
+        }}
+      />
+      <LevelUpCelebrationModal
+        levelInfo={pendingLevelUp}
+        onClose={() => {
+          sessionStorage.removeItem('openmedq_pending_levelup');
+          setPendingLevelUp(null);
+        }}
+      />
+      </>
+    );
+  }
+
+  if (view === 'leaderboard') {
+    return (
+      <LeaderboardPage
+        onBack={() => setView('dashboard')}
+      />
+    );
+  }
+
+  if (view === 'custom_creator') {
+    return (
+      <CustomModuleCreator
+        onBack={() => setView('dashboard')}
+        onStart={(config) => {
+          setCustomModuleConfig(config);
+          setView('custom_practice');
+        }}
+      />
+    );
+  }
+
+  if (view === 'custom_practice' && customModuleConfig) {
+    return (
+      <PracticeSuite
+        config={customModuleConfig}
+        resumeActiveSession={resumeActiveSession}
+        onExit={() => {
+          setResumeActiveSession(false);
+          setView('dashboard');
+          if (unsyncedCountRef.current > 0) {
+            triggerSync();
+            unsyncedCountRef.current = 0;
+          }
+        }}
+        onProgressUpdate={(count) => {
+          unsyncedCountRef.current += count;
+          if (unsyncedCountRef.current >= 10) {
+            triggerSync();
+            unsyncedCountRef.current = 0;
+          }
+        }}
+      />
+    );
+  }
+
+  return null;
 }
 
-export default App
+export default App;

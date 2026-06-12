@@ -1,0 +1,17 @@
+{
+  "name": "@openmedq/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "ts-fsrs": "^5.4.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

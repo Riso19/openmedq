@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1780918579687,
+      "tag": "0000_military_dorian_gray",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1780986754904,
+      "tag": "0001_supreme_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780993865129,
+      "tag": "0002_chunky_raza",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780994737240,
+      "tag": "0003_left_black_cat",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781175475657,
+      "tag": "0004_aspiring_snowbird",
+      "breakpoints": true
+    }
+  ]
+}

@@ -2,11 +2,13 @@
   "name": "backend",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@clerk/backend": "^3.5.0",
+    "@clerk/hono": "^0.1.33",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.23"
   },

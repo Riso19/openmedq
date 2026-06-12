@@ -3,7 +3,9 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "mobile",
+    "shared"
   ],
   "scripts": {
     "dev:frontend": "npm run dev -w frontend",
@@ -16,5 +18,15 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260608.1"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~56.0.0-preview.9",
+    "react": "19.2.3",
+    "react-native": "0.85.3"
   }
 }

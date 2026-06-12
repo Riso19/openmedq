@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, blob } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, blob, primaryKey, index } from 'drizzle-orm/sqlite-core';
 
 // Subjects (21 Medical Subjects for NEET PG)
 export const subjects = sqliteTable('subjects', {
@@ -9,7 +9,7 @@ export const subjects = sqliteTable('subjects', {
 // Topics under each subject
 export const topics = sqliteTable('topics', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  subjectId: integer('subject_id').references(() => subjects.id),
+  subjectId: integer('subject_id').references(() => subjects.id).notNull(),
   name: text('name').notNull(),
 });
 
@@ -28,6 +28,22 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   displayName: text('display_name'),
   createdAt: integer('created_at').notNull(),
+  streakDays: integer('streak_days').notNull().default(0),
+  lastActiveDate: text('last_active_date'), // YYYY-MM-DD
+  lifetimeDopa: integer('lifetime_dopa').notNull().default(0),
+});
+
+// User Monthly Dopa (resets monthly, holds Dopa per month for leaderboard)
+export const userMonthlyDopa = sqliteTable('user_monthly_dopa', {
+  userId: text('user_id').references(() => users.id).notNull(),
+  month: text('month').notNull(), // "YYYY-MM"
+  dopa: integer('dopa').notNull().default(0),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.userId, table.month] }),
+    monthDopaIdx: index('month_dopa_idx').on(table.month, table.dopa, table.updatedAt),
+  };
 });
 
 // User State (Compressed Progress Blob / JSON Arrays)
@@ -38,3 +54,5 @@ export const userState = sqliteTable('user_state', {
   progressData: blob('progress_data'), // Gzipped progress bitset
   updatedAt: integer('updated_at').notNull(),
 });
+
+

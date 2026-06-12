@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "name": "Anatomy",
+    "count": 14878
+  },
+  {
+    "id": 2,
+    "name": "Biochemistry",
+    "count": 8567
+  },
+  {
+    "id": 3,
+    "name": "Physiology",
+    "count": 9081
+  },
+  {
+    "id": 4,
+    "name": "Pharmacology",
+    "count": 14128
+  },
+  {
+    "id": 5,
+    "name": "Pathology",
+    "count": 15341
+  },
+  {
+    "id": 6,
+    "name": "Microbiology",
+    "count": 11567
+  },
+  {
+    "id": 7,
+    "name": "Forensic Medicine",
+    "count": 6031
+  },
+  {
+    "id": 8,
+    "name": "Social & Preventive Medicine",
+    "count": 12128
+  },
+  {
+    "id": 9,
+    "name": "Ophthalmology",
+    "count": 7057
+  },
+  {
+    "id": 10,
+    "name": "ENT",
+    "count": 5029
+  },
+  {
+    "id": 11,
+    "name": "General Medicine",
+    "count": 18345
+  },
+  {
+    "id": 12,
+    "name": "General Surgery",
+    "count": 17425
+  },
+  {
+    "id": 13,
+    "name": "Obstetrics & Gynecology",
+    "count": 10383
+  },
+  {
+    "id": 14,
+    "name": "Pediatrics",
+    "count": 8354
+  },
+  {
+    "id": 15,
+    "name": "Orthopedics",
+    "count": 3071
+  },
+  {
+    "id": 16,
+    "name": "Dermatology",
+    "count": 1833
+  },
+  {
+    "id": 17,
+    "name": "Psychiatry",
+    "count": 4503
+  },
+  {
+    "id": 18,
+    "name": "Radiology",
+    "count": 4538
+  },
+  {
+    "id": 19,
+    "name": "Anesthesia",
+    "count": 3237
+  },
+  {
+    "id": 20,
+    "name": "Dental",
+    "count": 10256
+  },
+  {
+    "id": 21,
+    "name": "General/Other",
+    "count": 3051
+  }
+]

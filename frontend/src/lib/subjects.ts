@@ -1,0 +1,2 @@
+export * from '@openmedq/shared';
+

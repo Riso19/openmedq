@@ -1,0 +1,1 @@
+CREATE INDEX `month_dopa_idx` ON `user_monthly_dopa` (`month`,`dopa`,`updated_at`);

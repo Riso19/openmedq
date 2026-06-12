@@ -1,0 +1,389 @@
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  Pressable, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView 
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSignUp, useSSO } from '@clerk/expo';
+import { ArrowLeft } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+import { useTheme } from '@/hooks/use-theme';
+import { triggerHaptic } from '@/lib/haptics';
+
+WebBrowser.maybeCompleteAuthSession();
+
+export default function SignUpScreen() {
+  const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const router = useRouter();
+
+  // Clerk hooks
+  const { signUp, isLoaded } = useSignUp() as any;
+  const { startSSOFlow } = useSSO();
+
+  const [firstName, setFirstName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+
+  const handleOAuthSignUp = async (strategy: 'oauth_google' | 'oauth_apple') => {
+    try {
+      setLoading(true);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+
+      const redirectUrl = Linking.createURL('/oauth-native-callback');
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy,
+        redirectUrl,
+      });
+
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+        Alert.alert('Welcome', 'Successfully signed up!');
+        router.replace('/profile');
+      }
+    } catch (err: any) {
+      console.warn('OAuth sign-up failed.');
+      if (err.message?.includes('User canceled') || err.message?.includes('cancelled')) {
+        return;
+      }
+      Alert.alert('Sign-Up Failed', 'Failed to authenticate. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!isLoaded) return;
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Required Fields', 'Please enter your email and password.');
+      return;
+    }
+
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      setLoading(true);
+      await signUp.create({
+        emailAddress: email.trim(),
+        password: password.trim(),
+        firstName: firstName.trim() || undefined,
+      });
+
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      Alert.alert('Verification Sent', 'Please check your email for the verification code.');
+      
+      // Redirect to verification screen
+      router.push({
+        pathname: '/verify' as any,
+        params: { email: email.trim() }
+      });
+    } catch (err: any) {
+      console.warn('Sign-up failed.');
+      Alert.alert(
+        'Sign-Up Failed', 
+        'Failed to create account. Please check your credentials and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <ScrollView 
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { 
+            paddingTop: Math.max(insets.top, 16), 
+            paddingBottom: Math.max(insets.bottom, 32) 
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Back Button */}
+        <Pressable 
+          onPress={() => {
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={({ pressed }) => [
+            styles.backButton,
+            { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <ArrowLeft size={20} color={theme.text} />
+        </Pressable>
+
+        {/* Title Block */}
+        <View style={styles.titleBlock}>
+          <Text style={[styles.title, { color: theme.text }]}>Create Account</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Join OpenMedQ to synchronize practice sessions and compete in the monthly leaderboard.
+          </Text>
+        </View>
+
+        {/* Form Fields */}
+        <View style={styles.form}>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>First Name</Text>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="e.g. Robin"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="words"
+              autoCorrect={false}
+              onFocus={() => setIsNameFocused(true)}
+              onBlur={() => setIsNameFocused(false)}
+              style={[
+                styles.input, 
+                { 
+                  backgroundColor: theme.backgroundElement, 
+                  borderColor: isNameFocused ? theme.pink : theme.hairline,
+                  color: theme.text
+                }
+              ]}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Email Address</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="robin@example.com"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onFocus={() => setIsEmailFocused(true)}
+              onBlur={() => setIsEmailFocused(false)}
+              style={[
+                styles.input, 
+                { 
+                  backgroundColor: theme.backgroundElement, 
+                  borderColor: isEmailFocused ? theme.pink : theme.hairline,
+                  color: theme.text
+                }
+              ]}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              placeholderTextColor={theme.textSecondary}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={() => setIsPasswordFocused(false)}
+              style={[
+                styles.input, 
+                { 
+                  backgroundColor: theme.backgroundElement, 
+                  borderColor: isPasswordFocused ? theme.pink : theme.hairline,
+                  color: theme.text
+                }
+              ]}
+            />
+          </View>
+
+          <Pressable
+            onPress={handleSignUp}
+            disabled={loading}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.pink, opacity: pressed || loading ? 0.8 : 1 }
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Sign Up</Text>
+            )}
+          </Pressable>
+
+          <View style={styles.dividerContainer}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.hairline }]} />
+            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.hairline }]} />
+          </View>
+
+          <View style={styles.oauthContainer}>
+            <Pressable
+              onPress={() => handleOAuthSignUp('oauth_google')}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.oauthButton,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.hairline, opacity: pressed || loading ? 0.8 : 1 }
+              ]}
+            >
+              <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Google</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleOAuthSignUp('oauth_apple')}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.oauthButton,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.hairline, opacity: pressed || loading ? 0.8 : 1 }
+              ]}
+            >
+              <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Apple</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Footer Toggle Link */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            Already have an account?{' '}
+          </Text>
+          <Pressable 
+            onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              router.replace('/login' as any);
+            }}
+          >
+            <Text style={[styles.footerLink, { color: theme.pink }]}>Sign In</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    flexGrow: 1,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  titleBlock: {
+    marginTop: 24,
+    marginBottom: 32,
+    gap: 8,
+  },
+  title: {
+    fontFamily: 'Plain Black, Inter, sans-serif',
+    fontSize: 32,
+    fontWeight: 'bold',
+    letterSpacing: -1.2,
+  },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  form: {
+    gap: 20,
+  },
+  inputContainer: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+  },
+  primaryButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 'auto',
+    paddingVertical: 24,
+  },
+  footerText: {
+    fontSize: 14,
+  },
+  footerLink: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  oauthContainer: {
+    gap: 12,
+  },
+  oauthButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  oauthButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+});
