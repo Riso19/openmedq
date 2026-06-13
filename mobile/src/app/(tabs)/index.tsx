@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useUser } from '@clerk/expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
-  Play, 
   Sliders, 
   Download, 
   RefreshCw, 
@@ -38,6 +37,7 @@ import { LevelUpModal } from '@/components/LevelUpModal';
 import { LevelResetModal } from '@/components/LevelResetModal';
 import { FSRSSettingsModal } from '@/components/FSRSSettingsModal';
 import { SyncManager } from '@/lib/SyncManager';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   getLevelInfo, 
   getNextLevelInfo, 
@@ -99,7 +99,6 @@ export default function DashboardScreen() {
   const [username, setUsername] = useState<string>('Aspirant');
   const [isSignedIn, setIsSignedIn] = useState<boolean>(false);
   
-  const [srCounts, setSrCounts] = useState<{ due: number; new: number }>({ due: 0, new: 0 });
   const [dueCount, setDueCount] = useState<number>(0);
   const [bookmarkedCount, setBookmarkedCount] = useState<number>(0);
   const [incorrectCount, setIncorrectCount] = useState<number>(0);
@@ -184,7 +183,6 @@ export default function DashboardScreen() {
 
       // 3. Spaced repetition and other stats counts
       const counts = await getSpacedRepetitionCounts({ subjectIds: [] });
-      setSrCounts(counts);
       setDueCount(counts.due);
 
       const bookmarkedRow = await sqlite.getFirstAsync<{ count: number }>(
@@ -588,22 +586,25 @@ export default function DashboardScreen() {
               Hello, {username} {isSignedIn ? '✓' : '(Guest)'}
             </Text>
           </View>
-          <Pressable 
-            onPress={() => handleSync(true)} 
-            style={({ pressed }) => [
-              styles.syncButton, 
-              { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }
-            ]}
-          >
-            {syncStatus === 'syncing' ? (
-              <ActivityIndicator size="small" color={theme.pink} />
-            ) : (
-              <RefreshCw size={16} color={syncStatus === 'error' ? theme.error : theme.text} />
-            )}
-            <Text style={[styles.syncButtonText, { color: theme.text }]}>
-              {syncStatus === 'syncing' ? 'Syncing...' : 'Sync'}
-            </Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <ThemeToggle />
+            <Pressable 
+              onPress={() => handleSync(true)} 
+              style={({ pressed }) => [
+                styles.syncButton, 
+                { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              {syncStatus === 'syncing' ? (
+                <ActivityIndicator size="small" color={theme.pink} />
+              ) : (
+                <RefreshCw size={16} color={syncStatus === 'error' ? theme.error : theme.text} />
+              )}
+              <Text style={[styles.syncButtonText, { color: theme.text }]}>
+                {syncStatus === 'syncing' ? 'Syncing...' : 'Sync'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Target Exam Focus Selection */}
@@ -1123,6 +1124,11 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 13,
     marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   syncButton: {
     flexDirection: 'row',

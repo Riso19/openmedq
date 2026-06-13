@@ -4,5 +4,10 @@
   },
   "ios": {
     "bundleIdentifier": "com.sain19.openmedqworkspace"
+  },
+  "extra": {
+    "eas": {
+      "projectId": "464a267e-df5e-49b7-b895-9639767ffe13"
+    }
   }
 }

@@ -59,10 +59,10 @@ export default function VerifyScreen() {
         Alert.alert('Incomplete Verification', 'Verification is still pending.');
       }
     } catch (err: any) {
-      console.warn('Verification failed.');
+      console.warn('Verification failed:', err);
       Alert.alert(
         'Verification Failed', 
-        'Invalid verification code. Please check and try again.'
+        err.message || 'Invalid verification code. Please check and try again.'
       );
     } finally {
       setLoading(false);

@@ -41,7 +41,7 @@ export default function SignUpScreen() {
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
-  const handleOAuthSignUp = async (strategy: 'oauth_google' | 'oauth_apple') => {
+  const handleOAuthSignUp = async (strategy: 'oauth_google') => {
     try {
       setLoading(true);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -58,11 +58,11 @@ export default function SignUpScreen() {
         router.replace('/profile');
       }
     } catch (err: any) {
-      console.warn('OAuth sign-up failed.');
+      console.warn('OAuth sign-up failed:', err);
       if (err.message?.includes('User canceled') || err.message?.includes('cancelled')) {
         return;
       }
-      Alert.alert('Sign-Up Failed', 'Failed to authenticate. Please try again.');
+      Alert.alert('Sign-Up Failed', err.message || 'Failed to authenticate. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -94,10 +94,10 @@ export default function SignUpScreen() {
         params: { email: email.trim() }
       });
     } catch (err: any) {
-      console.warn('Sign-up failed.');
+      console.warn('Sign-up failed:', err);
       Alert.alert(
         'Sign-Up Failed', 
-        'Failed to create account. Please check your credentials and try again.'
+        err.message || 'Failed to create account. Please check your credentials and try again.'
       );
     } finally {
       setLoading(false);
@@ -242,17 +242,6 @@ export default function SignUpScreen() {
               ]}
             >
               <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Google</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => handleOAuthSignUp('oauth_apple')}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.oauthButton,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.hairline, opacity: pressed || loading ? 0.8 : 1 }
-              ]}
-            >
-              <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Apple</Text>
             </Pressable>
           </View>
         </View>

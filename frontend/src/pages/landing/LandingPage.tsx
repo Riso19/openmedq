@@ -83,6 +83,7 @@ export function LandingPage({
   onViewDMCA,
   onViewContribute,
   onViewRoadmap,
+  onViewDownload,
   isDark = false
 }: { 
   onStartPractice: () => void; 
@@ -93,6 +94,7 @@ export function LandingPage({
   onViewDMCA: () => void;
   onViewContribute: () => void;
   onViewRoadmap: () => void;
+  onViewDownload: () => void;
   isDark?: boolean;
 }) {
   const logoSrc = isDark ? '/logo-dark.png' : '/logo-light.png';
@@ -113,7 +115,8 @@ export function LandingPage({
   const [gitHubStars, setGitHubStars] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/Riso19/openmedq')
+    const controller = new AbortController();
+    fetch('https://api.github.com/repos/Riso19/openmedq', { signal: controller.signal })
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error('Failed to fetch stars');
@@ -125,8 +128,12 @@ export function LandingPage({
         }
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return;
         console.warn('GitHub star fetch failed:', err);
       });
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   // FAQ Accordion State
@@ -286,6 +293,7 @@ export function LandingPage({
         <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-clay-muted">
           <button onClick={onViewRoadmap} className="hover:text-clay-ink transition-colors duration-200 bg-transparent border-0 p-0 font-semibold text-sm cursor-pointer">Roadmap</button>
           <button onClick={onViewContribute} className="hover:text-clay-ink transition-colors duration-200 bg-transparent border-0 p-0 font-semibold text-sm cursor-pointer">Contribute</button>
+          <button onClick={onViewDownload} className="hover:text-clay-ink transition-colors duration-200 bg-transparent border-0 p-0 font-semibold text-sm cursor-pointer">Download App</button>
         </nav>
 
         {/* Desktop actions */}
@@ -362,6 +370,15 @@ export function LandingPage({
             >
               Contribute & Submit
             </button>
+            <button 
+              onClick={() => { 
+                setIsMobileMenuOpen(false); 
+                onViewDownload(); 
+              }} 
+              className="py-2 border-b border-clay-hairline hover:text-clay-pink text-left bg-transparent border-0 p-0 font-semibold text-base cursor-pointer"
+            >
+              Download Mobile App (Beta)
+            </button>
           </nav>
  
           <div className="flex flex-col gap-4 mb-8">
@@ -423,8 +440,17 @@ export function LandingPage({
         
         {/* Left Side: Copywriting & Actions */}
         <div className="flex-1 text-left flex flex-col items-start w-full animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-clay-surface-strong border border-clay-hairline text-clay-ink text-xs font-semibold tracking-wide uppercase mb-6">
-            <span>Built by a 3rd Year MBBS Student (Solo Project)</span>
+          <div className="flex flex-wrap gap-2.5 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-clay-surface-strong border border-clay-hairline text-clay-ink text-xs font-semibold tracking-wide uppercase">
+              <span>Built by a 3rd Year MBBS Student (Solo Project)</span>
+            </div>
+            <button 
+              onClick={onViewDownload}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-clay-pink/10 hover:bg-clay-pink/20 border border-clay-pink/20 text-clay-pink text-xs font-bold tracking-wide uppercase transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3 h-3 text-clay-pink fill-current animate-pulse" />
+              <span>Mobile App Beta Out!</span>
+            </button>
           </div>
 
           {/* Headline */}
@@ -1379,6 +1405,7 @@ export function LandingPage({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 md:gap-16 text-left">
             <div className="flex flex-col gap-3">
               <span className="text-xs font-bold uppercase tracking-wider text-clay-ink">App</span>
+              <button onClick={onViewDownload} className="text-xs text-clay-muted hover:text-clay-ink transition-colors text-left bg-transparent border-0 p-0 cursor-pointer">Download Mobile App</button>
               <a href="#sandbox" className="text-xs text-clay-muted hover:text-clay-ink transition-colors">Sandbox MCQ</a>
               <a href="#manifesto" className="text-xs text-clay-muted hover:text-clay-ink transition-colors">Manifesto</a>
               <a href="#features" className="text-xs text-clay-muted hover:text-clay-ink transition-colors">Features</a>

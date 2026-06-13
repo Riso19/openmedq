@@ -77,3 +77,45 @@ export type AppType = typeof routes;
 ```
 This enables the client-side `hc<AppType>(...)` to correctly infer the paths, parameters, and return types of all endpoints.
 
+---
+
+## 5. Expo Deep Linking Scheme & Clerk Redirect Whitelisting
+
+### The Problem
+When performing OAuth (e.g. Google/Apple) inside an Expo mobile client with Clerk, the auth callback redirects back to the app using a deep link URL scheme. If the scheme is configured as a generic word (such as `scheme: "mobile"` in `app.json`), it can conflict with other applications on the testing device. Additionally, if the scheme is not allowlisted in the Clerk Dashboard, the authentication handshake will fail with a redirect mismatch error.
+
+### The Solution
+1. Use a unique scheme identifier (such as `scheme: "openmedq"`) in `app.json`.
+2. Ensure the full callback URL (e.g., `openmedq://oauth-native-callback`) is explicitly allowlisted in the **Clerk Dashboard** under **User & Auth > Social Connections** (under the "Allowlist for mobile SSO redirect" field).
+
+---
+
+## 6. Expo .env Variable Caching in Metro Bundler
+
+### The Problem
+The Expo Metro bundler aggressively caches `.env` variables. If the bundler was running prior to editing or adding variables in `mobile/.env`, Metro will serve the stale cached keys (such as `pk_test_...` instead of `pk_live_...`), causing silent authentication failures or instance mismatches.
+
+### The Solution
+Whenever updating environment variables in the mobile `.env` file, always restart the Metro bundler with the clear cache option:
+```bash
+npx expo start -c
+```
+
+---
+
+## 7. Animated.Value with React Refs (Linter Error)
+
+### The Problem
+Using `useRef(new Animated.Value(...)).current` inside components triggers the `react-hooks/refs` ESLint rule if the animated value is interpolated or read during the rendering cycle (e.g. `animation.interpolate(...)` called in the component body):
+```
+Error: Cannot access refs during render. React refs are values that are not needed for rendering. Refs should only be accessed outside of render...
+```
+
+### The Solution
+Use `useState` with a lazy-initialization function to create the `Animated.Value`. Since state values are stable and not treated as mutable refs by the linter, calling `.interpolate()` on them during render is fully permitted:
+
+```typescript
+const [animation] = useState(() => new Animated.Value(isDark ? 1 : 0));
+```
+
+

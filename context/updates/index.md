@@ -39,7 +39,7 @@ This directory logs updates, deprecated patterns, and common mistakes encountere
   * **Description**: Standards for Expo React Native workspace layout, shared module design, platform compatibility constraints, and AI agent mobile MCP/skills integration.
 * [expo_typescript_clerk_standards.md](file:///Users/sain/development/openmedq/context/updates/expo_typescript_clerk_standards.md):
   * **Category**: Common mistakes to avoid / Architecture standards.
-  * **Description**: Standards for resolving TypeScript monorepo type leakage, Clerk signals SDK compiler errors, and useEffect setState linter warnings in the Expo mobile app.
+  * **Description**: Standards for resolving TypeScript monorepo type leakage, Clerk signals SDK compiler errors, useEffect setState linter warnings, deep link scheme collision fixes, and Metro environment variable caching in the Expo mobile app.
 * [cloudflare_free_tier_scalability_standards.md](file:///Users/sain/development/openmedq/context/updates/cloudflare_free_tier_scalability_standards.md):
   * **Category**: New info learned via web research / Architecture standards.
   * **Description**: Standards for Cloudflare Free Tier scalability optimization, including Workers request quota bypass using static R2 direct routing, D1 query optimizations, and client-side caching.

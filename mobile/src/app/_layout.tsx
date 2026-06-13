@@ -1,10 +1,12 @@
 import { ThemeProvider, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { useColorScheme, ActivityIndicator, View } from 'react-native';
+import { useColorScheme, ActivityIndicator, View, Appearance } from 'react-native';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { UpdateNotifier } from '@/components/UpdateNotifier';
 import { initDatabase } from '@/lib/db';
 import { AmoledDarkTheme, ClayLightTheme } from '@/constants/theme';
 
@@ -24,6 +26,11 @@ export default function RootLayout() {
     async function setup() {
       try {
         await initDatabase();
+        // Load persisted theme preference
+        const savedTheme = await AsyncStorage.getItem('openmedq_theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          Appearance.setColorScheme(savedTheme);
+        }
       } catch (err) {
         console.error('Failed to initialize database.');
       } finally {
@@ -51,7 +58,9 @@ export default function RootLayout() {
           <Stack.Screen name="signup" options={{ presentation: 'modal' }} />
           <Stack.Screen name="verify" />
           <Stack.Screen name="practice-suite" />
+          <Stack.Screen name="oauth-native-callback" />
         </Stack>
+        <UpdateNotifier />
       </ThemeProvider>
     </ClerkProvider>
   );

@@ -4,7 +4,12 @@ context/*
 .agents/
 .env
 .env.*
+.env*.local
+*.env
 .dev.vars
+*service-account.json
+*credential*.json
+*secret*.json
 
 # IDEs and OS
 .DS_Store
@@ -16,6 +21,25 @@ context/*
 *.sln
 *.sw?
 
+# Keystores & Certificates
+*.jks
+*.keystore
+*.p12
+*.p8
+*.pem
+*.key
+*.der
+*.cer
+*.mobileprovision
+*.provisionprofile
+
+# Databases
+*.db
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+
 # Temporary / Scratch files
 scratch/
 *.log
@@ -23,5 +47,25 @@ npm-debug.log*
 
 # Build and deployment cache
 .expo/
+**/.expo/
 dist/
+**/dist/
 .wrangler/
+**/.wrangler/
+build/
+**/build/
+web-build/
+**/web-build/
+.venv/
+**/.venv/
+venv/
+**/venv/
+
+# Native builds
+ios/
+**/ios/
+android/
+**/android/
+
+# Large local parsing and ingestion data
+data/

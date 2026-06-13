@@ -39,7 +39,7 @@ export default function LoginScreen() {
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
-  const handleOAuthSignIn = async (strategy: 'oauth_google' | 'oauth_apple') => {
+  const handleOAuthSignIn = async (strategy: 'oauth_google') => {
     try {
       setLoading(true);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -56,11 +56,11 @@ export default function LoginScreen() {
         router.replace('/profile');
       }
     } catch (err: any) {
-      console.warn('OAuth sign-in failed.');
+      console.warn('OAuth sign-in failed:', err);
       if (err.message?.includes('User canceled') || err.message?.includes('cancelled')) {
         return;
       }
-      Alert.alert('Sign-In Failed', 'Failed to authenticate. Please try again.');
+      Alert.alert('Sign-In Failed', err.message || 'Failed to authenticate. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -92,10 +92,10 @@ export default function LoginScreen() {
         Alert.alert('Incomplete Sign-In', 'Additional verification is required.');
       }
     } catch (err: any) {
-      console.warn('Sign-in failed.');
+      console.warn('Sign-in failed:', err);
       Alert.alert(
         'Sign-In Failed', 
-        'Please check your credentials and try again.'
+        err.message || 'Please check your credentials and try again.'
       );
     } finally {
       setLoading(false);
@@ -218,17 +218,6 @@ export default function LoginScreen() {
               ]}
             >
               <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Google</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => handleOAuthSignIn('oauth_apple')}
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.oauthButton,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.hairline, opacity: pressed || loading ? 0.8 : 1 }
-              ]}
-            >
-              <Text style={[styles.oauthButtonText, { color: theme.text }]}>Continue with Apple</Text>
             </Pressable>
           </View>
         </View>

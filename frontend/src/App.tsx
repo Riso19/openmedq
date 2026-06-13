@@ -16,10 +16,11 @@ import { Disclaimer } from './pages/legal/Disclaimer';
 import { DMCAPolicy } from './pages/legal/DMCAPolicy';
 import { Contribute } from './pages/contribute/Contribute';
 import { Roadmap } from './pages/roadmap/Roadmap';
+import { DownloadPage } from './pages/download/DownloadPage';
 
 import { useTheme } from './components/theme-provider';
 
-const getInitialView = (): 'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap' => {
+const getInitialView = (): 'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap' | 'download' => {
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   
@@ -40,6 +41,9 @@ const getInitialView = (): 'landing' | 'auth' | 'custom_creator' | 'custom_pract
   }
   if (path === '/roadmap' || hash === '#roadmap') {
     return 'roadmap';
+  }
+  if (path === '/download' || hash === '#download') {
+    return 'download';
   }
   return 'landing';
 };
@@ -96,7 +100,9 @@ function App() {
 
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
-  const [view, setView] = useState<'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap'>(getInitialView);
+  const [view, setView] = useState<'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap' | 'download'>(getInitialView);
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const [customModuleConfig, setCustomModuleConfig] = useState<CustomModuleConfig | null>(null);
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
@@ -141,7 +147,9 @@ function App() {
         setView('contribute');
       } else if (path === '/roadmap' || hash === '#roadmap') {
         setView('roadmap');
-      } else if (path === '/' && (view === 'privacy_policy' || view === 'terms_conditions' || view === 'disclaimer' || view === 'dmca_policy' || view === 'contribute' || view === 'roadmap')) {
+      } else if (path === '/download' || hash === '#download') {
+        setView('download');
+      } else if (path === '/' && (viewRef.current === 'privacy_policy' || viewRef.current === 'terms_conditions' || viewRef.current === 'disclaimer' || viewRef.current === 'dmca_policy' || viewRef.current === 'contribute' || viewRef.current === 'roadmap' || viewRef.current === 'download')) {
         setView('landing');
       }
     };
@@ -152,7 +160,7 @@ function App() {
       window.removeEventListener('hashchange', handleRouting);
       window.removeEventListener('popstate', handleRouting);
     };
-  }, [view]);
+  }, []);
 
   // Dynamic canonical and social preview meta tag updater
   useEffect(() => {
@@ -313,6 +321,11 @@ function App() {
     setView('roadmap');
   }, []);
 
+  const handleViewDownload = useCallback(() => {
+    window.history.pushState(null, '', '/download');
+    setView('download');
+  }, []);
+
   if (view === 'landing') {
     return (
       <LandingPage 
@@ -324,6 +337,7 @@ function App() {
         onViewDMCA={handleViewDMCA}
         onViewContribute={handleViewContribute}
         onViewRoadmap={handleViewRoadmap}
+        onViewDownload={handleViewDownload}
         isDark={isDark}
       />
     );
@@ -351,6 +365,10 @@ function App() {
 
   if (view === 'roadmap') {
     return <Roadmap onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'download') {
+    return <DownloadPage onBack={handleBackToLanding} />;
   }
 
   if (view === 'auth') {

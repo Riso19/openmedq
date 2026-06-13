@@ -10,12 +10,24 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsub3Blbm1lZHEuY29tJA",
+        "EXPO_PUBLIC_API_URL": "https://api.openmedq.com",
+        "EXPO_PUBLIC_CDN_URL": "https://cdn.openmedq.com"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsub3Blbm1lZHEuY29tJA",
+        "EXPO_PUBLIC_API_URL": "https://api.openmedq.com",
+        "EXPO_PUBLIC_CDN_URL": "https://cdn.openmedq.com"
+      }
     }
   },
   "submit": {
