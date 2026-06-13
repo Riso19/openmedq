@@ -29,6 +29,7 @@ interface CustomModuleConfig {
   newCardsLimit?: number;
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }
 
 interface PracticeSuiteProps {
@@ -254,6 +255,7 @@ export function PracticeSuite({ config, onExit, onProgressUpdate, resumeActiveSe
             newCardsLimit: config.newCardsLimit,
             examType: config.examType,
             examYear: config.examYear,
+            examYears: config.examYears,
           });
 
           // Dynamic online fetch if local questions are 0 and config specifies topicIds
@@ -311,53 +313,60 @@ export function PracticeSuite({ config, onExit, onProgressUpdate, resumeActiveSe
             });
           }
 
-          // Dynamic online fetch for PYQ Year packs if local questions are 0 and config specifies examType/examYear
-          if (filteredQs.length === 0 && config.examType && config.examYear && typeof navigator !== 'undefined' && navigator.onLine) {
+          // Dynamic online fetch for PYQ Year packs if local questions are 0 and config specifies examType/examYears
+          if (filteredQs.length === 0 && config.examType && (config.examYears || config.examYear) && typeof navigator !== 'undefined' && navigator.onLine) {
             try {
               const cdnUrl = import.meta.env.VITE_CDN_URL || `${import.meta.env.VITE_API_URL || ''}/api/assets`;
-              const res = await fetch(`${cdnUrl}/packs/neet_pg_${config.examYear}.json`);
-              if (res.ok) {
-                const rawQuestions = await res.json();
-                if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
-                  const formatted = rawQuestions.map((q: any) => ({
-                    id: q.id,
-                    questionText: q.questionText,
-                    opa: q.opa,
-                    opb: q.opb,
-                    opc: q.opc,
-                    opd: q.opd,
-                    correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
-                      ? q.correctOption + 1
-                      : q.correctOption,
-                    subjectId: q.subjectId,
-                    topicId: q.topicId,
-                    examType: q.examType || undefined,
-                    examYear: q.examYear || undefined,
-                    explanation: q.explanation || 'This high-yield question pack was fetched dynamically from OpenMedQ CDN servers.',
-                    imageUrl: q.imageUrl || undefined,
-                    explanationImageUrl: q.explanationImageUrl || undefined,
-                    opaImageUrl: q.opaImageUrl || undefined,
-                    opbImageUrl: q.opbImageUrl || undefined,
-                    opcImageUrl: q.opcImageUrl || undefined,
-                    opdImageUrl: q.opdImageUrl || undefined,
-                  }));
-                  
-                  await db.questions.bulkPut(formatted);
-                  
-                  // Re-query local database after seeding
-                  filteredQs = await getRandomQuestionsFiltered({
-                    subjectIds: config.subjectIds,
-                    topicIds: config.topicIds,
-                    status: config.status,
-                    limit: config.limit,
-                    newCardsLimit: config.newCardsLimit,
-                    examType: config.examType,
-                    examYear: config.examYear,
-                  });
+              const yearsToFetch = config.examYears && config.examYears.length > 0
+                ? config.examYears
+                : (config.examYear ? [config.examYear] : []);
+
+              for (const year of yearsToFetch) {
+                const res = await fetch(`${cdnUrl}/packs/neet_pg_${year}.json`);
+                if (res.ok) {
+                  const rawQuestions = await res.json();
+                  if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+                    const formatted = rawQuestions.map((q: any) => ({
+                      id: q.id,
+                      questionText: q.questionText,
+                      opa: q.opa,
+                      opb: q.opb,
+                      opc: q.opc,
+                      opd: q.opd,
+                      correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+                        ? q.correctOption + 1
+                        : q.correctOption,
+                      subjectId: q.subjectId,
+                      topicId: q.topicId,
+                      examType: q.examType || undefined,
+                      examYear: q.examYear || undefined,
+                      explanation: q.explanation || 'This high-yield question pack was fetched dynamically from OpenMedQ CDN servers.',
+                      imageUrl: q.imageUrl || undefined,
+                      explanationImageUrl: q.explanationImageUrl || undefined,
+                      opaImageUrl: q.opaImageUrl || undefined,
+                      opbImageUrl: q.opbImageUrl || undefined,
+                      opcImageUrl: q.opcImageUrl || undefined,
+                      opdImageUrl: q.opdImageUrl || undefined,
+                    }));
+                    
+                    await db.questions.bulkPut(formatted);
+                  }
                 }
               }
+              
+              // Re-query local database after seeding
+              filteredQs = await getRandomQuestionsFiltered({
+                subjectIds: config.subjectIds,
+                topicIds: config.topicIds,
+                status: config.status,
+                limit: config.limit,
+                newCardsLimit: config.newCardsLimit,
+                examType: config.examType,
+                examYear: config.examYear,
+                examYears: config.examYears,
+              });
             } catch (err) {
-              console.warn(`Failed to seed exam year.`);
+              console.warn(`Failed to dynamically seed exam years:`, err);
             }
           }
         }

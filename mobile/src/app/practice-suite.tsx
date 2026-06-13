@@ -113,6 +113,9 @@ export default function PracticeSuiteScreen() {
   const negativeMarks = Number(params.negativeMarks) || 0;
   const examType = params.examType ? String(params.examType) : undefined;
   const examYear = params.examYear ? Number(params.examYear) : undefined;
+  const examYears = useMemo(() => {
+    return params.examYears ? (params.examYears as string).split(',').map(Number) : undefined;
+  }, [params.examYears]);
 
   // Game states
   const [loading, setLoading] = useState(true);
@@ -193,88 +196,96 @@ export default function PracticeSuiteScreen() {
           newCardsLimit,
           examType,
           examYear,
+          examYears,
         });
 
-        // Dynamic online fetch for PYQ Year packs if local questions are 0 and params specify examType/examYear
-        if (filteredQs.length === 0 && examType && examYear) {
+        // Dynamic online fetch for PYQ Year packs if local questions are 0 and params specify examType/examYears
+        if (filteredQs.length === 0 && examType && (examYears || examYear)) {
           try {
             const cdnUrl = process.env.EXPO_PUBLIC_CDN_URL || 'https://pub-9cffcd4fe5774485889f8d5ce5999219.r2.dev';
-            const response = await fetch(`${cdnUrl}/packs/neet_pg_${examYear}.json`);
-            if (response.ok) {
-              const rawQuestions = await response.json();
-              if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
-                // Map correctOption to 1-indexed locally for mobile app compatibility
-                const formattedQuestions = rawQuestions.map((q: any) => ({
-                  ...q,
-                  correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
-                    ? q.correctOption + 1
-                    : q.correctOption,
-                }));
+            const yearsToFetch = examYears && examYears.length > 0
+              ? examYears
+              : (examYear ? [examYear] : []);
 
-                await sqlite.withTransactionAsync(async () => {
-                  for (const q of formattedQuestions) {
-                    await sqlite.runAsync(
-                      `INSERT INTO questions (
-                        id, subjectId, topicId, examType, examYear, questionText, opa, opb, opc, opd, correctOption, explanation,
-                        imageUrl, explanationImageUrl, opaImageUrl, opbImageUrl, opcImageUrl, opdImageUrl
-                      ) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                       ON CONFLICT(id) DO UPDATE SET
-                         subjectId=excluded.subjectId,
-                         topicId=excluded.topicId,
-                         examType=excluded.examType,
-                         examYear=excluded.examYear,
-                         questionText=excluded.questionText,
-                         opa=excluded.opa,
-                         opb=excluded.opb,
-                         opc=excluded.opc,
-                         opd=excluded.opd,
-                         correctOption=excluded.correctOption,
-                         explanation=excluded.explanation,
-                         imageUrl=excluded.imageUrl,
-                         explanationImageUrl=excluded.explanationImageUrl,
-                         opaImageUrl=excluded.opaImageUrl,
-                         opbImageUrl=excluded.opbImageUrl,
-                         opcImageUrl=excluded.opcImageUrl,
-                         opdImageUrl=excluded.opdImageUrl`,
-                      [
-                        q.id,
-                        q.subjectId,
-                        q.topicId,
-                        q.examType || null,
-                        q.examYear || null,
-                        q.questionText,
-                        q.opa,
-                        q.opb,
-                        q.opc,
-                        q.opd,
-                        q.correctOption,
-                        q.explanation || null,
-                        q.imageUrl || null,
-                        q.explanationImageUrl || null,
-                        q.opaImageUrl || null,
-                        q.opbImageUrl || null,
-                        q.opcImageUrl || null,
-                        q.opdImageUrl || null
-                      ]
-                    );
-                  }
-                });
+            for (const year of yearsToFetch) {
+              const response = await fetch(`${cdnUrl}/packs/neet_pg_${year}.json`);
+              if (response.ok) {
+                const rawQuestions = await response.json();
+                if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+                  // Map correctOption to 1-indexed locally for mobile app compatibility
+                  const formattedQuestions = rawQuestions.map((q: any) => ({
+                    ...q,
+                    correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+                      ? q.correctOption + 1
+                      : q.correctOption,
+                  }));
 
-                // Re-query local database after dynamic seeding
-                filteredQs = await getRandomQuestionsFiltered({
-                  subjectIds,
-                  topicIds,
-                  status,
-                  limit,
-                  newCardsLimit,
-                  examType,
-                  examYear,
-                });
+                  await sqlite.withTransactionAsync(async () => {
+                    for (const q of formattedQuestions) {
+                      await sqlite.runAsync(
+                        `INSERT INTO questions (
+                          id, subjectId, topicId, examType, examYear, questionText, opa, opb, opc, opd, correctOption, explanation,
+                          imageUrl, explanationImageUrl, opaImageUrl, opbImageUrl, opcImageUrl, opdImageUrl
+                        ) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         ON CONFLICT(id) DO UPDATE SET
+                           subjectId=excluded.subjectId,
+                           topicId=excluded.topicId,
+                           examType=excluded.examType,
+                           examYear=excluded.examYear,
+                           questionText=excluded.questionText,
+                           opa=excluded.opa,
+                           opb=excluded.opb,
+                           opc=excluded.opc,
+                           opd=excluded.opd,
+                           correctOption=excluded.correctOption,
+                           explanation=excluded.explanation,
+                           imageUrl=excluded.imageUrl,
+                           explanationImageUrl=excluded.explanationImageUrl,
+                           opaImageUrl=excluded.opaImageUrl,
+                           opbImageUrl=excluded.opbImageUrl,
+                           opcImageUrl=excluded.opcImageUrl,
+                           opdImageUrl=excluded.opdImageUrl`,
+                        [
+                          q.id,
+                          q.subjectId,
+                          q.topicId,
+                          q.examType || null,
+                          q.examYear || null,
+                          q.questionText,
+                          q.opa,
+                          q.opb,
+                          q.opc,
+                          q.opd,
+                          q.correctOption,
+                          q.explanation || null,
+                          q.imageUrl || null,
+                          q.explanationImageUrl || null,
+                          q.opaImageUrl || null,
+                          q.opbImageUrl || null,
+                          q.opcImageUrl || null,
+                          q.opdImageUrl || null
+                        ]
+                      );
+                    }
+                  });
+                }
               }
             }
+
+            // Re-query local database after dynamic seeding
+            filteredQs = await getRandomQuestionsFiltered({
+              subjectIds,
+              topicIds,
+              status,
+              limit,
+              newCardsLimit,
+              examType,
+              examYear,
+              examYears,
+            });
           } catch (err) {
-            console.warn('Failed to seed exam year.');
+            console.warn('Failed to seed exam years:', err);
           }
         }
 

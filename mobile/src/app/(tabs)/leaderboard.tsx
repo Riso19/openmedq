@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -9,11 +9,13 @@ import {
   Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@clerk/expo';
+import { useAuth, useUser } from '@clerk/expo';
+import { useFocusEffect } from 'expo-router';
 import { Flame, RefreshCw } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { API_URL } from '@/lib/api';
+import { SyncManager } from '@/lib/SyncManager';
 import { getCurrentMonthStr, getMonthStr, getLevelInfo } from '@openmedq/shared';
 
 interface LeaderboardItem {
@@ -43,6 +45,7 @@ export default function LeaderboardScreen() {
   
   // Clerk Auth Hook
   const { getToken, isSignedIn, userId } = useAuth();
+  const { user } = useUser();
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [currentUserRank, setCurrentUserRank] = useState<LeaderboardItem | null>(null);
@@ -82,8 +85,24 @@ export default function LeaderboardScreen() {
 
       // Get sync token if signed in via Clerk
       const token = isSignedIn ? await getToken() : null;
+
+      // If signed in, trigger a background D1 sync to push any offline DOPA/progress first
+      if (token) {
+        try {
+          let profile = undefined;
+          if (user) {
+            profile = {
+              displayName: user.fullName || user.username || undefined,
+              email: user.primaryEmailAddress?.emailAddress || undefined,
+            };
+          }
+          await SyncManager.syncWithD1(getToken, undefined, profile, force);
+        } catch (syncErr) {
+          console.warn('Background sync before leaderboard fetch failed:', syncErr);
+        }
+      }
+
       const baseUrl = API_URL;
-      
       const headers: Record<string, string> = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -129,14 +148,15 @@ export default function LeaderboardScreen() {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, userId, month]);
+  }, [isSignedIn, userId, month, user, getToken]);
 
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      fetchLeaderboard(false);
-    });
-  }, [fetchLeaderboard]);
+  useFocusEffect(
+    useCallback(() => {
+      Promise.resolve().then(() => {
+        fetchLeaderboard(false);
+      });
+    }, [fetchLeaderboard])
+  );
 
   const topThree = leaderboard.slice(0, 3);
   const others = leaderboard.slice(3);

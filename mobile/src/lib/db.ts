@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { subjectsList } from '@openmedq/shared';
+import { subjectsList, NEET_PG_PYQ_SUBJECT } from '@openmedq/shared';
 
 export interface LocalQuestion {
   id: number;
@@ -213,6 +213,7 @@ export async function getRandomQuestionsFiltered({
   newCardsLimit,
   examType,
   examYear,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
@@ -221,28 +222,84 @@ export async function getRandomQuestionsFiltered({
   newCardsLimit?: number;
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }): Promise<LocalQuestion[]> {
   const db = await getDB();
   
   // 1. Fetch questions matching filters (id, subjectId, topicId only)
   let qsQuery = 'SELECT id, subjectId, topicId FROM questions';
   const params: any[] = [];
+  const whereClauses: string[] = [];
   
-  if (examType) {
-    qsQuery += ' WHERE examType = ?';
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
+    // direct legacy mode
+    whereClauses.push('examType = ?');
     params.push(examType);
-    if (examYear) {
-      qsQuery += ' AND examYear = ?';
+    if (examYears && examYears.length > 0) {
+      const placeholders = examYears.map(() => '?').join(',');
+      whereClauses.push(`examYear IN (${placeholders})`);
+      params.push(...examYears);
+    } else if (examYear) {
+      whereClauses.push('examYear = ?');
       params.push(examYear);
     }
-  } else if (topicIds && topicIds.length > 0) {
-    const placeholders = topicIds.map(() => '?').join(',');
-    qsQuery += ` WHERE topicId IN (${placeholders})`;
-    params.push(...topicIds);
-  } else if (subjectIds.length > 0) {
-    const placeholders = subjectIds.map(() => '?').join(',');
-    qsQuery += ` WHERE subjectId IN (${placeholders})`;
-    params.push(...subjectIds);
+
+    if (topicIds && topicIds.length > 0) {
+      const placeholders = topicIds.map(() => '?').join(',');
+      whereClauses.push(`topicId IN (${placeholders})`);
+      params.push(...topicIds);
+    } else if (subjectIds && subjectIds.length > 0) {
+      const placeholders = subjectIds.map(() => '?').join(',');
+      whereClauses.push(`subjectId IN (${placeholders})`);
+      params.push(...subjectIds);
+    }
+  } else {
+    if (subjectIds.length === 0) {
+      // no subject filter
+    } else if (hasPYQ) {
+      const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : (examYear ? [examYear] : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]));
+
+      whereClauses.push("examType = 'NEET PG'");
+      
+      const yearPlaceholders = effectiveYears.map(() => '?').join(',');
+      whereClauses.push(`examYear IN (${yearPlaceholders})`);
+      params.push(...effectiveYears);
+
+      if (hasStandardSubjects) {
+        const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+
+        if (standardTopicIds.length > 0) {
+          const placeholders = standardTopicIds.map(() => '?').join(',');
+          whereClauses.push(`topicId IN (${placeholders})`);
+          params.push(...standardTopicIds);
+        } else {
+          const placeholders = standardSubjectIds.map(() => '?').join(',');
+          whereClauses.push(`subjectId IN (${placeholders})`);
+          params.push(...standardSubjectIds);
+        }
+      }
+    } else {
+      // Standard QBank path
+      const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+      if (standardTopicIds.length > 0) {
+        const placeholders = standardTopicIds.map(() => '?').join(',');
+        whereClauses.push(`topicId IN (${placeholders})`);
+        params.push(...standardTopicIds);
+      } else {
+        const placeholders = subjectIds.map(() => '?').join(',');
+        whereClauses.push(`subjectId IN (${placeholders})`);
+        params.push(...subjectIds);
+      }
+    }
+  }
+
+  if (whereClauses.length > 0) {
+    qsQuery += ' WHERE ' + whereClauses.join(' AND ');
   }
   
   const questionsMeta = await db.getAllAsync<{ id: number; subjectId: number; topicId: number }>(qsQuery, params);
@@ -383,34 +440,91 @@ export async function getFilteredQuestionsCount({
   status,
   examType,
   examYear,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
   status: 'ALL' | 'UNATTEMPTED' | 'INCORRECT' | 'CORRECT' | 'BOOKMARKED' | 'SPACED_REPETITION' | 'LEECHES';
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }): Promise<number> {
   const db = await getDB();
   
   // 1. Fetch questions matching filters (id, subjectId, topicId only)
   let qsQuery = 'SELECT id FROM questions';
   const params: any[] = [];
+  const whereClauses: string[] = [];
   
-  if (examType) {
-    qsQuery += ' WHERE examType = ?';
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
+    // direct legacy mode
+    whereClauses.push('examType = ?');
     params.push(examType);
-    if (examYear) {
-      qsQuery += ' AND examYear = ?';
+    if (examYears && examYears.length > 0) {
+      const placeholders = examYears.map(() => '?').join(',');
+      whereClauses.push(`examYear IN (${placeholders})`);
+      params.push(...examYears);
+    } else if (examYear) {
+      whereClauses.push('examYear = ?');
       params.push(examYear);
     }
-  } else if (topicIds && topicIds.length > 0) {
-    const placeholders = topicIds.map(() => '?').join(',');
-    qsQuery += ` WHERE topicId IN (${placeholders})`;
-    params.push(...topicIds);
-  } else if (subjectIds.length > 0) {
-    const placeholders = subjectIds.map(() => '?').join(',');
-    qsQuery += ` WHERE subjectId IN (${placeholders})`;
-    params.push(...subjectIds);
+
+    if (topicIds && topicIds.length > 0) {
+      const placeholders = topicIds.map(() => '?').join(',');
+      whereClauses.push(`topicId IN (${placeholders})`);
+      params.push(...topicIds);
+    } else if (subjectIds && subjectIds.length > 0) {
+      const placeholders = subjectIds.map(() => '?').join(',');
+      whereClauses.push(`subjectId IN (${placeholders})`);
+      params.push(...subjectIds);
+    }
+  } else {
+    if (subjectIds.length === 0) {
+      // no subject filter
+    } else if (hasPYQ) {
+      const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : (examYear ? [examYear] : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]));
+
+      whereClauses.push("examType = 'NEET PG'");
+      
+      const yearPlaceholders = effectiveYears.map(() => '?').join(',');
+      whereClauses.push(`examYear IN (${yearPlaceholders})`);
+      params.push(...effectiveYears);
+
+      if (hasStandardSubjects) {
+        const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+
+        if (standardTopicIds.length > 0) {
+          const placeholders = standardTopicIds.map(() => '?').join(',');
+          whereClauses.push(`topicId IN (${placeholders})`);
+          params.push(...standardTopicIds);
+        } else {
+          const placeholders = standardSubjectIds.map(() => '?').join(',');
+          whereClauses.push(`subjectId IN (${placeholders})`);
+          params.push(...standardSubjectIds);
+        }
+      }
+    } else {
+      // Standard QBank path
+      const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+      if (standardTopicIds.length > 0) {
+        const placeholders = standardTopicIds.map(() => '?').join(',');
+        whereClauses.push(`topicId IN (${placeholders})`);
+        params.push(...standardTopicIds);
+      } else {
+        const placeholders = subjectIds.map(() => '?').join(',');
+        whereClauses.push(`subjectId IN (${placeholders})`);
+        params.push(...subjectIds);
+      }
+    }
+  }
+
+  if (whereClauses.length > 0) {
+    qsQuery += ' WHERE ' + whereClauses.join(' AND ');
   }
   
   const questionsMeta = await db.getAllAsync<{ id: number }>(qsQuery, params);
@@ -461,9 +575,13 @@ export async function getFilteredQuestionsCount({
 export async function getSpacedRepetitionCounts({
   subjectIds,
   topicIds,
+  examType,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
+  examType?: string;
+  examYears?: number[];
 }): Promise<{ due: number; new: number }> {
   const db = await getDB();
   const now = Date.now();
@@ -488,15 +606,73 @@ export async function getSpacedRepetitionCounts({
   
   let qsQuery = 'SELECT id FROM questions';
   const params: any[] = [];
+  const whereClauses: string[] = [];
   
-  if (topicIds && topicIds.length > 0) {
-    const placeholders = topicIds.map(() => '?').join(',');
-    qsQuery += ` WHERE topicId IN (${placeholders})`;
-    params.push(...topicIds);
-  } else if (subjectIds.length > 0) {
-    const placeholders = subjectIds.map(() => '?').join(',');
-    qsQuery += ` WHERE subjectId IN (${placeholders})`;
-    params.push(...subjectIds);
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
+    // direct legacy mode
+    whereClauses.push('examType = ?');
+    params.push(examType);
+    if (examYears && examYears.length > 0) {
+      const placeholders = examYears.map(() => '?').join(',');
+      whereClauses.push(`examYear IN (${placeholders})`);
+      params.push(...examYears);
+    }
+
+    if (topicIds && topicIds.length > 0) {
+      const placeholders = topicIds.map(() => '?').join(',');
+      whereClauses.push(`topicId IN (${placeholders})`);
+      params.push(...topicIds);
+    } else if (subjectIds && subjectIds.length > 0) {
+      const placeholders = subjectIds.map(() => '?').join(',');
+      whereClauses.push(`subjectId IN (${placeholders})`);
+      params.push(...subjectIds);
+    }
+  } else {
+    if (subjectIds.length > 0) {
+      if (hasPYQ) {
+        const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+        const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]);
+
+        whereClauses.push("examType = 'NEET PG'");
+        
+        const yearPlaceholders = effectiveYears.map(() => '?').join(',');
+        whereClauses.push(`examYear IN (${yearPlaceholders})`);
+        params.push(...effectiveYears);
+
+        if (hasStandardSubjects) {
+          const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+          const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+
+          if (standardTopicIds.length > 0) {
+            const placeholders = standardTopicIds.map(() => '?').join(',');
+            whereClauses.push(`topicId IN (${placeholders})`);
+            params.push(...standardTopicIds);
+          } else {
+            const placeholders = standardSubjectIds.map(() => '?').join(',');
+            whereClauses.push(`subjectId IN (${placeholders})`);
+            params.push(...standardSubjectIds);
+          }
+        }
+      } else {
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+        if (standardTopicIds.length > 0) {
+          const placeholders = standardTopicIds.map(() => '?').join(',');
+          whereClauses.push(`topicId IN (${placeholders})`);
+          params.push(...standardTopicIds);
+        } else {
+          const placeholders = subjectIds.map(() => '?').join(',');
+          whereClauses.push(`subjectId IN (${placeholders})`);
+          params.push(...subjectIds);
+        }
+      }
+    }
+  }
+
+  if (whereClauses.length > 0) {
+    qsQuery += ' WHERE ' + whereClauses.join(' AND ');
   }
   
   const questionsMeta = await db.getAllAsync<{ id: number }>(qsQuery, params);

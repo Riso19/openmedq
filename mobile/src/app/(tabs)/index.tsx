@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Image 
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, useUser } from '@clerk/expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -359,12 +359,14 @@ export default function DashboardScreen() {
     }
   }, [getSyncToken, loadDashboardData, router, user]);
 
-  // Initial load and auto-sync on auth change
-  useEffect(() => {
-    Promise.resolve().then(() => {
-      loadDashboardData();
-    });
-  }, [loadDashboardData]);
+  // Initial load and auto-sync on focus/auth change
+  useFocusEffect(
+    useCallback(() => {
+      Promise.resolve().then(() => {
+        loadDashboardData();
+      });
+    }, [loadDashboardData])
+  );
 
   useEffect(() => {
     if (isClerkSignedIn && user) {

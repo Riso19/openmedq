@@ -3,7 +3,6 @@ import {
   ArrowLeft, 
   Send, 
   Code, 
-  Bot, 
   CheckCircle, 
   GitPullRequest, 
   FileText, 
@@ -102,6 +101,55 @@ export function Contribute({ onBack }: ContributeProps) {
   const [jsonContent, setJsonContent] = useState<string>(DEFAULT_SAMPLE_JSON);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyPrompt = () => {
+    const promptText = `Convert the following medical multiple-choice questions (MCQs) into a raw JSON array matching this exact schema. Do not wrap the JSON in markdown code blocks or add any conversational text.
+
+[
+  {
+    "id": 10001,
+    "questionText": "Question text here. Use markdown like **bold** for clinical key terms.",
+    "opa": "Option A text",
+    "opb": "Option B text",
+    "opc": "Option C text",
+    "opd": "Option D text",
+    "correctOption": 0,
+    "subjectId": 1,
+    "topicId": 1,
+    "examType": "NEET_PG",
+    "examYear": 2025,
+    "explanation": "Detailed explanation of why the correct option is right. Use markdown like **bold**."
+  }
+]
+
+Subject ID Reference Table:
+1 = Anatomy
+2 = Physiology
+3 = Biochemistry
+4 = Pathology
+5 = Microbiology
+6 = Pharmacology
+7 = Forensic Medicine
+8 = Social Preventive Medicine (SPM)
+9 = Medicine
+10 = Surgery
+11 = OBG
+12 = Pediatrics
+13 = ENT
+14 = Ophthalmology
+15 = Dermatology
+16 = Psychiatry
+17 = Radiology
+18 = Anesthesia
+19 = Orthopedics
+
+Here are the questions to convert:
+[PASTE YOUR QUESTIONS/TEXT/PDF CONTENT HERE]`;
+    navigator.clipboard.writeText(promptText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Validate the QBank JSON schema on modification
   const validationResult = useMemo(() => {
@@ -230,12 +278,12 @@ export function Contribute({ onBack }: ContributeProps) {
 
         {/* Header */}
         <div className="border-b border-clay-hairline pb-6 mb-8">
-          <span className="text-xs font-bold uppercase tracking-wider text-clay-pink mb-2 block">Let's Build Together</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-clay-pink mb-2 block">Built by a student, perfected by you</span>
           <h1 className="font-rubik text-3xl md:text-5xl font-medium tracking-[-0.04em] text-clay-ink mb-4">
-            Built in the Trenches. Perfected by You.
+            Let's Fix Medical Prep Together.
           </h1>
           <p className="text-clay-muted text-xs md:text-sm leading-relaxed">
-            OpenMedQ is 100% free, forever. No corporate paywalls, no predatory subscription pricing. We are medical students and clinical doctors co-building the resource we actually need. Every correction you submit and every question you contribute saves a peer from studying outdated guidelines at 3 AM. Step up, join us, and leave your mark.
+            Hey, I'm a 3rd-year MBBS student. I got tired of standing on the clinical wards all day, coming back to my room exhausted, opening a question bank, and seeing paywalled questions with outdated clinical guidelines or annoying typos they never fix. I built OpenMedQ as a 100% free, open-source tool. No paywalls, no ads. But I can't keep this entire database updated on my own between my hospital rotations. If you spot a mistake or want to contribute new clinical vignettes, please join in. It keeps all of us from memorizing wrong facts at 3 AM.
           </p>
         </div>
 
@@ -248,33 +296,30 @@ export function Contribute({ onBack }: ContributeProps) {
               </div>
               <div className="flex-1 min-w-0 w-full">
                 <h2 className="font-rubik text-xl font-semibold text-clay-ink tracking-tight mb-2">
-                  Protect Your Peers: Report Errors & Submit Vignettes
+                  1. Report a Correction
                 </h2>
                 <p className="text-clay-body text-xs sm:text-sm leading-relaxed mb-4">
-                  Clinical guidelines shift, and textbooks have typos. If you spot a wrong answer key or clinical bug while practicing, reporting it takes exactly 15 seconds. Don't let another student memorize an incorrect fact. Join our active Telegram group and keep our community database clinical-grade.
+                  Spotted a typo, an outdated drug dose, or a wrong answer key? Reporting it takes about 15 seconds:
                 </p>
                 
                 <div className="bg-clay-canvas border border-clay-hairline rounded-clay-md p-4 mb-6">
-                  <span className="text-xs font-bold uppercase tracking-wider text-clay-ink block mb-2">Recommended Submission Formats:</span>
                   <ul className="space-y-3 text-xs sm:text-sm text-clay-body">
                     <li className="flex gap-2 items-start">
                       <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0 text-left">
-                        <strong>For Corrections:</strong> Simply post the Question ID (found on the card) or a screenshot in our Telegram group. Tell us what is wrong, and drop a quick textbook reference (e.g., Robbins 10th Ed, Page 45) so we can verify and push the live update instantly.
+                        <strong>Take a Screenshot:</strong> Just take a screenshot of the question card containing the error while you are practicing.
                       </div>
                     </li>
                     <li className="flex gap-2 items-start">
                       <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0 text-left">
-                        <strong>For New Questions:</strong> Submit exam recall questions or custom clinical vignettes using this zero-friction format:
-                        <code className="block bg-clay-surface-soft border border-clay-hairline p-2 rounded mt-1.5 text-xs text-clay-ink font-mono whitespace-pre overflow-x-auto w-full max-w-full">
-{`[Subject] Pediatrics
-[Question] A 3-year-old child presents with...
-[Options] A) Option A | B) Option B | C) Option C | D) Option D
-[Correct] A
-[Explanation] Under normal conditions, the...
-[Reference] Ghai Essential Pediatrics, 9th Ed, Page 124`}
-                        </code>
+                        <strong>Post it in Telegram:</strong> Click below to join our Telegram group. Send the screenshot, mention what needs to be fixed, and <MarkdownRenderer content="cite a textbook source (e.g. *Robbins Pathology 10th Ed, Page 45*) so I can double-check it." inline />
+                      </div>
+                    </li>
+                    <li className="flex gap-2 items-start">
+                      <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <strong>Live Update:</strong> A moderator will verify the correction and update the database, pushing the fix out to everyone instantly.
                       </div>
                     </li>
                   </ul>
@@ -287,7 +332,7 @@ export function Contribute({ onBack }: ContributeProps) {
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#229ED9] hover:bg-[#1e8ec3] text-white font-bold text-xs sm:text-sm rounded-clay-md transition-colors"
                 >
                   <Send className="w-4 h-4 fill-current" />
-                  <span>Join t.me/openmedq</span>
+                  <span>Join Telegram Group (t.me/openmedq)</span>
                 </a>
               </div>
             </div>
@@ -301,31 +346,49 @@ export function Contribute({ onBack }: ContributeProps) {
               </div>
               <div className="flex-1 min-w-0 w-full">
                 <h2 className="font-rubik text-xl font-semibold text-clay-ink tracking-tight mb-2">
-                  Co-Author the Core App on GitHub
+                  2. Contribute Code on GitHub
                 </h2>
                 <p className="text-clay-body text-xs sm:text-sm leading-relaxed mb-4">
-                  Are you a medical student who writes code, or an open-source developer looking to build something with massive societal value? OpenMedQ is built entirely in the open. Claim feature requests, optimize the spaced repetition scheduler, resolve mobile Expo bugs, and get credited directly as a verified builder in our production release.
+                  If you're a medical student who writes code or an open-source dev, come help me build. You'll be credited directly as a builder in the app.
                 </p>
+
+                <div className="bg-clay-canvas border border-clay-hairline rounded-clay-md p-4 mb-6">
+                  <span className="text-xs font-bold uppercase tracking-wider text-clay-ink block mb-2">GitHub Workflow:</span>
+                  <ul className="space-y-2 text-xs sm:text-sm text-clay-body">
+                    <li className="flex gap-2 items-start">
+                      <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
+                      <span>Fork the repo at <a href="https://github.com/Riso19/openmedq" target="_blank" rel="noopener noreferrer" className="text-clay-pink hover:underline font-semibold">github.com/Riso19/openmedq</a>.</span>
+                    </li>
+                    <li className="flex gap-2 items-start">
+                      <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
+                      <span>Check out open issues, make your edits on a new branch, and commit.</span>
+                    </li>
+                    <li className="flex gap-2 items-start">
+                      <CheckCircle className="w-4.5 h-4.5 text-clay-mint shrink-0 mt-0.5" />
+                      <span>Open a Pull Request. I will review and merge it.</span>
+                    </li>
+                  </ul>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div className="border border-clay-hairline rounded-clay-md p-4 text-left">
                     <span className="text-xs font-bold uppercase tracking-wider text-clay-pink block mb-1">Frontend Stack</span>
-                    <span className="text-xs text-clay-muted">Vite, React 19, TypeScript, Tailwind CSS, Dexie (IndexedDB), Lucide Icons</span>
+                    <span className="text-xs text-clay-muted">Vite, React 19, TypeScript, Tailwind CSS, Dexie (IndexedDB)</span>
                   </div>
                   <div className="border border-clay-hairline rounded-clay-md p-4 text-left">
                     <span className="text-xs font-bold uppercase tracking-wider text-clay-pink block mb-1">Backend & Mobile</span>
-                    <span className="text-xs text-clay-muted">Hono API, Cloudflare Workers, Drizzle ORM, SQLite (D1 & Expo SQLite), React Native & Expo</span>
+                    <span className="text-xs text-clay-muted">Hono, Cloudflare Workers & D1, React Native, Expo SQLite</span>
                   </div>
                 </div>
 
                 <a 
-                  href="https://github.com/openmedq/openmedq" 
+                  href="https://github.com/Riso19/openmedq" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs sm:text-sm rounded-clay-md transition-colors"
                 >
                   <GitPullRequest className="w-4 h-4" />
-                  <span>Explore GitHub Repository</span>
+                  <span>Open GitHub Repository</span>
                 </a>
               </div>
             </div>
@@ -339,11 +402,44 @@ export function Contribute({ onBack }: ContributeProps) {
               </div>
               <div className="flex-1 min-w-0 w-full">
                 <h2 className="font-rubik text-xl font-semibold text-clay-ink tracking-tight mb-2">
-                  Interactive QBank Playground & Schema Validator
+                  3. Create and Author Custom MCQ Packs
                 </h2>
-                <p className="text-clay-body text-xs sm:text-sm leading-relaxed mb-6">
-                  Build custom question packs and validate them instantly against our clinical schema. Click the <strong>Live Preview</strong> tab to test exactly how your vignette, options, and explanation render to students practicing on our suite.
+                <p className="text-clay-body text-xs sm:text-sm leading-relaxed mb-4">
+                  Want to add recall question blocks from recent exams or your own clinical study notes? Use the editor below to draft and validate them.
                 </p>
+
+                <div className="bg-clay-canvas border border-clay-hairline rounded-clay-md p-4 mb-6 text-xs sm:text-sm text-clay-body">
+                  <span className="text-xs font-bold uppercase tracking-wider text-clay-ink block mb-2">How to format your questions using AI:</span>
+                  <ol className="space-y-2 list-decimal pl-4 mb-4">
+                    <li>Click the button below to copy the AI formatting prompt.</li>
+                    <li>Paste it into ChatGPT, Gemini, or Claude, and copy-paste your raw questions or upload your PDFs.</li>
+                    <li>Copy the AI's generated JSON text and paste it into the <strong>JSON Schema Editor</strong> below.</li>
+                    <li>Check the <strong>Live Render Preview</strong> tab to see how they render, then click <strong>Export Pack</strong> to download the validated file.</li>
+                    <li>Drop the exported <code>.json</code> file in our <strong>Telegram Group (https://t.me/openmedq)</strong>.</li>
+                  </ol>
+                  
+                  <button
+                    onClick={handleCopyPrompt}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-clay-surface-soft hover:bg-clay-surface-strong border border-clay-hairline text-clay-ink rounded-clay-md text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5 text-clay-mint" />
+                        <span>Prompt Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Copy AI Formatting Prompt</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="mt-4 pt-4 border-t border-clay-hairline text-[11px] text-clay-muted">
+                    <span className="font-bold text-clay-pink block mb-1">🚀 Future Plan: Peer-to-Peer Sharing Community</span>
+                    We are actively building a QBank Sharing Portal (Tier 1 of our roadmap). Once live, you will be able to upload your custom JSON packs directly to the app for immediate peer download, rating, and quality-controlled feedback. Until then, please send your exported packs to our Telegram group!
+                  </div>
+                </div>
 
                 {/* Tab Switcher */}
                 <div className="flex border-b border-clay-hairline mb-5 gap-4">
@@ -655,25 +751,7 @@ export function Contribute({ onBack }: ContributeProps) {
             </div>
           </section>
 
-          {/* Section 4: Telegram Bot Integration */}
-          <section className="bg-clay-peach/10 border border-clay-peach rounded-clay-lg sm:rounded-clay-xl p-4 sm:p-6 md:p-8 relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="w-10 h-10 rounded-clay-md bg-clay-peach/20 text-clay-pink flex items-center justify-center shrink-0">
-                <Bot className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0 w-full">
-                <h2 className="font-rubik text-xl font-semibold text-clay-ink tracking-tight mb-2">
-                  Zero-Friction Submission Queue (Upcoming Bot)
-                </h2>
-                <p className="text-clay-body text-xs sm:text-sm leading-relaxed">
-                  We believe contributing should be as easy as sending a chat message. We're building a Cloudflare Worker-powered moderation bot. Once active, you can send commands like <code className="font-mono text-clay-ink bg-clay-canvas px-1.5 py-0.5 rounded text-[11px] border border-clay-hairline">/correct &lt;question_id&gt; &lt;description&gt;</code> or <code className="font-mono text-clay-ink bg-clay-canvas px-1.5 py-0.5 rounded text-[11px] border border-clay-hairline">/submit</code> directly in our Telegram group. 
-                </p>
-                <p className="text-clay-body text-xs sm:text-sm leading-relaxed mt-2">
-                  The bot will automatically parse the message, write it to D1, and trigger a private review prompt for moderators. Approved corrections instantly rebuild and update our global Cloudflare R2 CDN packs.
-                </p>
-              </div>
-            </div>
-          </section>
+
 
         </div>
 

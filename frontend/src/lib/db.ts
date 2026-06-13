@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { NEET_PG_PYQ_SUBJECT } from './subjects';
 
 export interface LocalQuestion {
   id: number;
@@ -149,6 +150,7 @@ export async function getRandomQuestionsFiltered({
   newCardsLimit,
   examType,
   examYear,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
@@ -157,19 +159,55 @@ export async function getRandomQuestionsFiltered({
   newCardsLimit?: number;
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }): Promise<LocalQuestion[]> {
-  let qs: LocalQuestion[];
-  if (examType) {
+  let qs: LocalQuestion[] = [];
+  
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
     qs = await db.questions.where('examType').equals(examType).toArray();
-    if (examYear) {
+    if (examYears && examYears.length > 0) {
+      qs = qs.filter(q => q.examYear !== undefined && examYears.includes(q.examYear));
+    } else if (examYear) {
       qs = qs.filter(q => q.examYear === examYear);
     }
-  } else if (topicIds && topicIds.length > 0) {
-    qs = await db.questions.where('topicId').anyOf(topicIds).toArray();
-  } else if (subjectIds.length > 0) {
-    qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+
+    if (topicIds && topicIds.length > 0) {
+      qs = qs.filter(q => topicIds.includes(q.topicId));
+    } else if (subjectIds && subjectIds.length > 0) {
+      qs = qs.filter(q => subjectIds.includes(q.subjectId));
+    }
   } else {
-    qs = await db.questions.toArray();
+    if (subjectIds.length === 0) {
+      qs = await db.questions.toArray();
+    } else if (hasPYQ) {
+      const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : (examYear ? [examYear] : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]));
+      
+      let pyqQs = await db.questions.where('examType').equals('NEET PG').toArray();
+      pyqQs = pyqQs.filter(q => q.examYear !== undefined && effectiveYears.includes(q.examYear));
+      
+      if (hasStandardSubjects) {
+        const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+        
+        if (standardTopicIds.length > 0) {
+          pyqQs = pyqQs.filter(q => q.topicId !== undefined && standardTopicIds.includes(q.topicId));
+        } else {
+          pyqQs = pyqQs.filter(q => q.subjectId !== undefined && standardSubjectIds.includes(q.subjectId));
+        }
+      }
+      qs = pyqQs;
+    } else {
+      const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+      if (standardTopicIds.length > 0) {
+        qs = await db.questions.where('topicId').anyOf(standardTopicIds).toArray();
+      } else {
+        qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+      }
+    }
   }
 
   const progressList = await db.progress.toArray();
@@ -249,25 +287,62 @@ export async function getFilteredQuestionsCount({
   status,
   examType,
   examYear,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
   status: 'ALL' | 'UNATTEMPTED' | 'INCORRECT' | 'CORRECT' | 'BOOKMARKED' | 'SPACED_REPETITION' | 'LEECHES';
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }): Promise<number> {
-  let qs: LocalQuestion[];
-  if (examType) {
+  let qs: LocalQuestion[] = [];
+  
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
     qs = await db.questions.where('examType').equals(examType).toArray();
-    if (examYear) {
+    if (examYears && examYears.length > 0) {
+      qs = qs.filter(q => q.examYear !== undefined && examYears.includes(q.examYear));
+    } else if (examYear) {
       qs = qs.filter(q => q.examYear === examYear);
     }
-  } else if (topicIds && topicIds.length > 0) {
-    qs = await db.questions.where('topicId').anyOf(topicIds).toArray();
-  } else if (subjectIds.length > 0) {
-    qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+
+    if (topicIds && topicIds.length > 0) {
+      qs = qs.filter(q => topicIds.includes(q.topicId));
+    } else if (subjectIds && subjectIds.length > 0) {
+      qs = qs.filter(q => subjectIds.includes(q.subjectId));
+    }
   } else {
-    qs = await db.questions.toArray();
+    if (subjectIds.length === 0) {
+      qs = await db.questions.toArray();
+    } else if (hasPYQ) {
+      const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : (examYear ? [examYear] : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]));
+      
+      let pyqQs = await db.questions.where('examType').equals('NEET PG').toArray();
+      pyqQs = pyqQs.filter(q => q.examYear !== undefined && effectiveYears.includes(q.examYear));
+      
+      if (hasStandardSubjects) {
+        const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+        
+        if (standardTopicIds.length > 0) {
+          pyqQs = pyqQs.filter(q => q.topicId !== undefined && standardTopicIds.includes(q.topicId));
+        } else {
+          pyqQs = pyqQs.filter(q => q.subjectId !== undefined && standardSubjectIds.includes(q.subjectId));
+        }
+      }
+      qs = pyqQs;
+    } else {
+      const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+      if (standardTopicIds.length > 0) {
+        qs = await db.questions.where('topicId').anyOf(standardTopicIds).toArray();
+      } else {
+        qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+      }
+    }
   }
 
   const progressList = await db.progress.toArray();
@@ -312,17 +387,58 @@ export async function getFilteredQuestionsCount({
 export async function getSpacedRepetitionCounts({
   subjectIds,
   topicIds,
+  examType,
+  examYears,
 }: {
   subjectIds: number[];
   topicIds?: number[];
+  examType?: string;
+  examYears?: number[];
 }): Promise<{ due: number; new: number }> {
-  let qs: LocalQuestion[];
-  if (topicIds && topicIds.length > 0) {
-    qs = await db.questions.where('topicId').anyOf(topicIds).toArray();
-  } else if (subjectIds.length > 0) {
-    qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+  let qs: LocalQuestion[] = [];
+  
+  const hasStandardSubjects = subjectIds.some(id => id !== NEET_PG_PYQ_SUBJECT.id);
+  const hasPYQ = subjectIds.includes(NEET_PG_PYQ_SUBJECT.id) || examType === 'NEET PG';
+
+  if (examType && !subjectIds.includes(NEET_PG_PYQ_SUBJECT.id)) {
+    qs = await db.questions.where('examType').equals(examType).toArray();
+    if (examYears && examYears.length > 0) {
+      qs = qs.filter(q => q.examYear !== undefined && examYears.includes(q.examYear));
+    }
+    if (topicIds && topicIds.length > 0) {
+      qs = qs.filter(q => topicIds.includes(q.topicId));
+    } else if (subjectIds && subjectIds.length > 0) {
+      qs = qs.filter(q => subjectIds.includes(q.subjectId));
+    }
   } else {
-    qs = await db.questions.toArray();
+    if (subjectIds.length === 0) {
+      qs = await db.questions.toArray();
+    } else if (hasPYQ) {
+      const selectedYears = topicIds ? topicIds.filter(id => id < 0).map(id => -id) : [];
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : (examYears && examYears.length > 0 ? examYears : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]);
+      
+      let pyqQs = await db.questions.where('examType').equals('NEET PG').toArray();
+      pyqQs = pyqQs.filter(q => q.examYear !== undefined && effectiveYears.includes(q.examYear));
+      
+      if (hasStandardSubjects) {
+        const standardSubjectIds = subjectIds.filter(id => id !== NEET_PG_PYQ_SUBJECT.id);
+        const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+        
+        if (standardTopicIds.length > 0) {
+          pyqQs = pyqQs.filter(q => q.topicId !== undefined && standardTopicIds.includes(q.topicId));
+        } else {
+          pyqQs = pyqQs.filter(q => q.subjectId !== undefined && standardSubjectIds.includes(q.subjectId));
+        }
+      }
+      qs = pyqQs;
+    } else {
+      const standardTopicIds = topicIds ? topicIds.filter(id => id > 0) : [];
+      if (standardTopicIds.length > 0) {
+        qs = await db.questions.where('topicId').anyOf(standardTopicIds).toArray();
+      } else {
+        qs = await db.questions.where('subjectId').anyOf(subjectIds).toArray();
+      }
+    }
   }
 
   const progressList = await db.progress.toArray();

@@ -59,7 +59,7 @@ const rateLimiter = (limit: number, windowMs: number) => {
 };
 
 // Global in-memory cache for parsed R2 subject question packs
-const subjectPackCache = new Map<number, any[]>();
+const subjectPackCache = new Map<number | string, any[]>();
 
 function shuffleArray<T>(arr: T[]): T[] {
   const newArr = [...arr];
@@ -143,7 +143,10 @@ const customPracticeSchema = z.object({
   topicIds: z.array(z.union([z.number(), z.string()])).optional(),
   status: z.enum(['UNATTEMPTED', 'INCORRECT', 'CORRECT', 'BOOKMARKED', 'SPACED_REPETITION', 'LEECHES', 'ALL']).optional(),
   limit: z.number().int().positive().optional(),
-  newCardsLimit: z.number().int().nonnegative().optional()
+  newCardsLimit: z.number().int().nonnegative().optional(),
+  examType: z.string().optional(),
+  examYear: z.number().int().optional(),
+  examYears: z.array(z.number().int()).optional()
 });
 
 const questionPackQuerySchema = z.object({
@@ -576,7 +579,7 @@ const routes = app.get('/', (c) => {
     if (!parsed.success) {
       return c.json({ success: false, error: 'Invalid custom practice request payload', details: parsed.error.issues }, 400);
     }
-    const { subjectIds, topicIds, status, limit, newCardsLimit } = parsed.data;
+    const { subjectIds, topicIds, status, limit, newCardsLimit, examYear, examYears } = parsed.data;
 
     let targetSubjectIds = subjectIds;
     if (!targetSubjectIds || !Array.isArray(targetSubjectIds) || targetSubjectIds.length === 0) {
@@ -644,54 +647,122 @@ const routes = app.get('/', (c) => {
 
     // Load and filter questions from R2 or in-memory cache
     let allQuestions: any[] = [];
+    const hasStandardSubjects = targetSubjectIds && targetSubjectIds.some(id => Number(id) !== 99);
+    const hasPYQ = targetSubjectIds && targetSubjectIds.map(Number).includes(99);
 
-    for (const subId of targetSubjectIds) {
-      const subIdNum = Number(subId);
-      let subjectQuestions = subjectPackCache.get(subIdNum);
+    if (hasPYQ) {
+      const selectedYears = examYears && examYears.length > 0 ? examYears : (examYear ? [examYear] : [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]);
+      for (const year of selectedYears) {
+        const cacheKey = `neet_pg_${year}`;
+        let yearQuestions = subjectPackCache.get(cacheKey);
 
-      if (!subjectQuestions) {
-        const key = `packs/subject_${subIdNum}.json`;
-        let parsed = null;
+        if (!yearQuestions) {
+          const key = `packs/neet_pg_${year}.json`;
+          let parsedPack = null;
 
-        // Try CDN first to hit Edge cache and save R2 operations
-        const cdnUrl = c.env.CDN_URL || 'https://assets.openmedq.com';
-        try {
-          const res = await fetch(`${cdnUrl}/${key}`);
-          if (res.ok) {
-            parsed = await res.json();
+          const cdnUrl = c.env.CDN_URL || 'https://assets.openmedq.com';
+          try {
+            const res = await fetch(`${cdnUrl}/${key}`);
+            if (res.ok) {
+              parsedPack = await res.json();
+            }
+          } catch (err) {
+            console.warn(`CDN fetch failed for NEET PG pack ${year}, falling back to direct R2 binding:`, err);
           }
-        } catch (err) {
-          console.warn(`CDN fetch failed for subject pack ${subIdNum}, falling back to direct R2 binding:`, err);
-        }
 
-        // Fallback to direct R2 bucket read
-        if (!parsed) {
-          const object = await c.env.BUCKET.get(key);
-          if (object) {
-            try {
-              const text = await object.text();
-              parsed = JSON.parse(text);
-            } catch (err) {
-              console.warn(`Failed to parse pack for subject ${subIdNum}:`, err);
+          if (!parsedPack) {
+            const object = await c.env.BUCKET.get(key);
+            if (object) {
+              try {
+                const text = await object.text();
+                parsedPack = JSON.parse(text);
+              } catch (err) {
+                console.warn(`Failed to parse pack for NEET PG ${year}:`, err);
+              }
             }
           }
+
+          if (Array.isArray(parsedPack)) {
+            yearQuestions = parsedPack;
+            subjectPackCache.set(cacheKey, parsedPack);
+          }
         }
 
-        if (Array.isArray(parsed)) {
-          subjectQuestions = parsed;
-          subjectPackCache.set(subIdNum, parsed);
+        if (yearQuestions) {
+          allQuestions = allQuestions.concat(yearQuestions);
         }
       }
 
-      if (subjectQuestions) {
-        allQuestions = allQuestions.concat(subjectQuestions);
-      }
-    }
+      // Intersection with standard subjects/topics if selected
+      if (hasStandardSubjects) {
+        const standardSubjectIds = targetSubjectIds!.map(Number).filter(id => id !== 99);
+        const standardTopicIds = topicIds ? topicIds.filter(id => Number(id) > 0).map(Number) : [];
 
-    // Filter by topicIds if provided
-    if (topicIds && Array.isArray(topicIds) && topicIds.length > 0) {
-      const topicSet = new Set(topicIds.map(Number));
-      allQuestions = allQuestions.filter(q => topicSet.has(Number(q.topicId)));
+        if (standardTopicIds.length > 0) {
+          const topicSet = new Set(standardTopicIds);
+          allQuestions = allQuestions.filter(q => q.topicId !== undefined && topicSet.has(Number(q.topicId)));
+        } else {
+          const subjectSet = new Set(standardSubjectIds);
+          allQuestions = allQuestions.filter(q => q.subjectId !== undefined && subjectSet.has(Number(q.subjectId)));
+        }
+      }
+
+      // Filter by negative topic IDs (years) if provided (in case we want to support topic-level year toggle)
+      const selectedYearTopics = topicIds ? topicIds.filter(id => Number(id) < 0).map(id => -Number(id)) : [];
+      if (selectedYearTopics.length > 0) {
+        const yearSet = new Set(selectedYearTopics);
+        allQuestions = allQuestions.filter(q => q.examYear !== undefined && yearSet.has(Number(q.examYear)));
+      }
+    } else {
+      // Standard subjects path
+      const standardSubjectIds = targetSubjectIds!.map(Number);
+      for (const subId of standardSubjectIds) {
+        const subIdNum = Number(subId);
+        let subjectQuestions = subjectPackCache.get(subIdNum);
+
+        if (!subjectQuestions) {
+          const key = `packs/subject_${subIdNum}.json`;
+          let parsedPack = null;
+
+          const cdnUrl = c.env.CDN_URL || 'https://assets.openmedq.com';
+          try {
+            const res = await fetch(`${cdnUrl}/${key}`);
+            if (res.ok) {
+              parsedPack = await res.json();
+            }
+          } catch (err) {
+            console.warn(`CDN fetch failed for subject pack ${subIdNum}, falling back to direct R2 binding:`, err);
+          }
+
+          if (!parsedPack) {
+            const object = await c.env.BUCKET.get(key);
+            if (object) {
+              try {
+                const text = await object.text();
+                parsedPack = JSON.parse(text);
+              } catch (err) {
+                console.warn(`Failed to parse pack for subject ${subIdNum}:`, err);
+              }
+            }
+          }
+
+          if (Array.isArray(parsedPack)) {
+            subjectQuestions = parsedPack;
+            subjectPackCache.set(subIdNum, parsedPack);
+          }
+        }
+
+        if (subjectQuestions) {
+          allQuestions = allQuestions.concat(subjectQuestions);
+        }
+      }
+
+      // Filter by standard topics if provided
+      const standardTopicIds = topicIds ? topicIds.filter(id => Number(id) > 0).map(Number) : [];
+      if (standardTopicIds.length > 0) {
+        const topicSet = new Set(standardTopicIds);
+        allQuestions = allQuestions.filter(q => q.topicId !== undefined && topicSet.has(Number(q.topicId)));
+      }
     }
 
     // Filter by student progress status

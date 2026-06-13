@@ -16,7 +16,7 @@ import { ArrowLeft, Timer, Play, CheckSquare, Square, ChevronDown, ChevronRight,
 
 import { useTheme } from '@/hooks/use-theme';
 import { getDB, getFilteredQuestionsCount, getSpacedRepetitionCounts } from '@/lib/db';
-import { subjectsList } from '@openmedq/shared';
+import { allSubjectsList, PYQ_PAPERS, NEET_PG_PYQ_SUBJECT } from '@openmedq/shared';
 import { getSubjectHierarchy } from '@/lib/hierarchy';
 
 export default function CustomCreatorScreen() {
@@ -60,8 +60,15 @@ export default function CustomCreatorScreen() {
           'SELECT subjectId, COUNT(id) as count FROM questions GROUP BY subjectId'
         );
         const map: Record<number, number> = {};
-        subjectsList.forEach(s => map[s.id] = 0);
+        allSubjectsList.forEach(s => map[s.id] = 0);
         rows.forEach(r => map[r.subjectId] = r.count);
+        
+        // Count NEET PG questions in sqlite
+        const pyqRow = await sqlite.getFirstAsync<{ count: number }>(
+          "SELECT COUNT(id) as count FROM questions WHERE examType = 'NEET PG'"
+        );
+        map[NEET_PG_PYQ_SUBJECT.id] = pyqRow?.count || 0;
+        
         setSubjectSeededCounts(map);
       } catch (err) {
         console.warn("Failed to load local pack info.");
@@ -70,8 +77,11 @@ export default function CustomCreatorScreen() {
     loadSeededInfo();
   }, []);
 
-  // Get all subtopic IDs for a subject from topics.json / hierarchy
+  // Get all subtopic IDs for a subject (maps years to negative IDs for virtual subject 99)
   const getSubjectSubtopicIds = (subjectId: number): number[] => {
+    if (subjectId === NEET_PG_PYQ_SUBJECT.id) {
+      return PYQ_PAPERS.map(p => -p.year);
+    }
     try {
       const hierarchy = getSubjectHierarchy(subjectId);
       const ids: number[] = [];
@@ -88,6 +98,9 @@ export default function CustomCreatorScreen() {
 
   // Get all subtopic IDs for a specific category inside a subject
   const getCategorySubtopicIds = (subjectId: number, categoryName: string): number[] => {
+    if (subjectId === NEET_PG_PYQ_SUBJECT.id) {
+      return PYQ_PAPERS.map(p => -p.year);
+    }
     try {
       const hierarchy = getSubjectHierarchy(subjectId);
       const category = hierarchy.topics.find(t => t.name === categoryName);
@@ -104,20 +117,28 @@ export default function CustomCreatorScreen() {
       if (!isSeeded) {
         const subtopicIds = getSubjectSubtopicIds(sId);
         if (subtopicIds.length > 0 && topicIds && topicIds.length > 0) {
-          try {
-            const hierarchy = getSubjectHierarchy(sId);
-            hierarchy.topics.forEach(t => {
-              t.subTopics.forEach(st => {
-                if (topicIds.includes(st.id)) {
-                  total += st.count || 0;
-                }
-              });
+          if (sId === NEET_PG_PYQ_SUBJECT.id) {
+            PYQ_PAPERS.forEach(p => {
+              if (topicIds.includes(-p.year)) {
+                total += p.count || 0;
+              }
             });
-          } catch (err) {
-            console.warn("Error retrieving subject categories.");
+          } else {
+            try {
+              const hierarchy = getSubjectHierarchy(sId);
+              hierarchy.topics.forEach(t => {
+                t.subTopics.forEach(st => {
+                  if (topicIds.includes(st.id)) {
+                    total += st.count || 0;
+                  }
+                });
+              });
+            } catch (err) {
+              console.warn("Error retrieving subject categories.");
+            }
           }
         } else {
-          const subject = subjectsList.find(s => s.id === sId);
+          const subject = allSubjectsList.find(s => s.id === sId);
           if (subject) {
             total += subject.count || 0;
           }
@@ -138,11 +159,16 @@ export default function CustomCreatorScreen() {
       try {
         let count = 0;
         const topicIdsParam = selectedTopicIds.length > 0 ? selectedTopicIds : undefined;
+        const pyqSelected = selectedSubjects.includes(NEET_PG_PYQ_SUBJECT.id);
+        const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+        const effectiveYears = selectedYears.length > 0 ? selectedYears : undefined;
         
         if (statusFilter === 'SPACED_REPETITION') {
           const counts = await getSpacedRepetitionCounts({ 
             subjectIds: selectedSubjects,
-            topicIds: topicIdsParam
+            topicIds: topicIdsParam,
+            examType: pyqSelected ? 'NEET PG' : undefined,
+            examYears: pyqSelected ? effectiveYears : undefined,
           });
           const unseededCount = getMetadataQuestionsCount(selectedSubjects, topicIdsParam);
           setSrCounts({
@@ -155,6 +181,8 @@ export default function CustomCreatorScreen() {
             subjectIds: selectedSubjects,
             topicIds: topicIdsParam,
             status: statusFilter,
+            examType: pyqSelected ? 'NEET PG' : undefined,
+            examYears: pyqSelected ? effectiveYears : undefined,
           });
           count = localCount + getMetadataQuestionsCount(selectedSubjects, topicIdsParam);
         } else {
@@ -162,11 +190,13 @@ export default function CustomCreatorScreen() {
             subjectIds: selectedSubjects,
             topicIds: topicIdsParam,
             status: statusFilter,
+            examType: pyqSelected ? 'NEET PG' : undefined,
+            examYears: pyqSelected ? effectiveYears : undefined,
           });
         }
         setAvailableCount(count);
       } catch (err) {
-        console.warn('Count update failed.');
+        console.warn('Count update failed:', err);
       } finally {
         setIsLoadingCount(false);
       }
@@ -317,92 +347,184 @@ export default function CustomCreatorScreen() {
       const sqlite = await getDB();
 
       for (const subj of unseeded) {
-        console.log(`Inline downloading subject ${subj.name} from CDN...`);
-        const res = await fetch(`${cdnUrl}/packs/subject_${subj.id}.json`);
+        if (subj.id === NEET_PG_PYQ_SUBJECT.id) {
+          const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+          const yearsToSync = selectedYears.length > 0 ? selectedYears : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018];
+          
+          for (const year of yearsToSync) {
+            console.log(`Inline downloading NEET PG ${year} from CDN...`);
+            const res = await fetch(`${cdnUrl}/packs/neet_pg_${year}.json`);
 
-        if (!res.ok) {
-          throw new Error(`Failed to download ${subj.name} pack (HTTP ${res.status})`);
-        }
+            if (res.ok) {
+              const rawQuestions = await res.json();
+              if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+                // Map correctOption to 1-indexed locally for frontend compatibility (0=A => 1, etc.)
+                const formattedQuestions = rawQuestions.map((q: any) => ({
+                  ...q,
+                  correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+                    ? q.correctOption + 1
+                    : q.correctOption,
+                }));
 
-        const rawQuestions = await res.json();
-        if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
-          throw new Error(`Empty or invalid question pack for ${subj.name}`);
-        }
-
-        // Map correctOption to 1-indexed locally for frontend compatibility (0=A => 1, etc.)
-        const formattedQuestions = rawQuestions.map((q: any) => ({
-          ...q,
-          correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
-            ? q.correctOption + 1
-            : q.correctOption,
-        }));
-
-        await sqlite.withTransactionAsync(async () => {
-          for (const q of formattedQuestions) {
-            await sqlite.runAsync(
-              `INSERT INTO questions (
-                id, subjectId, topicId, examType, examYear, questionText, opa, opb, opc, opd, correctOption, explanation,
-                imageUrl, explanationImageUrl, opaImageUrl, opbImageUrl, opcImageUrl, opdImageUrl
-              ) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET
-                 subjectId=excluded.subjectId,
-                 topicId=excluded.topicId,
-                 examType=excluded.examType,
-                 examYear=excluded.examYear,
-                 questionText=excluded.questionText,
-                 opa=excluded.opa,
-                 opb=excluded.opb,
-                 opc=excluded.opc,
-                 opd=excluded.opd,
-                 correctOption=excluded.correctOption,
-                 explanation=excluded.explanation,
-                 imageUrl=excluded.imageUrl,
-                 explanationImageUrl=excluded.explanationImageUrl,
-                 opaImageUrl=excluded.opaImageUrl,
-                 opbImageUrl=excluded.opbImageUrl,
-                 opcImageUrl=excluded.opcImageUrl,
-                 opdImageUrl=excluded.opdImageUrl`,
-              [
-                q.id,
-                q.subjectId,
-                q.topicId,
-                q.examType || null,
-                q.examYear || null,
-                q.questionText,
-                q.opa,
-                q.opb,
-                q.opc,
-                q.opd,
-                q.correctOption,
-                q.explanation || null,
-                q.imageUrl || null,
-                q.explanationImageUrl || null,
-                q.opaImageUrl || null,
-                q.opbImageUrl || null,
-                q.opcImageUrl || null,
-                q.opdImageUrl || null
-              ]
-            );
+                await sqlite.withTransactionAsync(async () => {
+                  for (const q of formattedQuestions) {
+                    await sqlite.runAsync(
+                      `INSERT INTO questions (
+                        id, subjectId, topicId, examType, examYear, questionText, opa, opb, opc, opd, correctOption, explanation,
+                        imageUrl, explanationImageUrl, opaImageUrl, opbImageUrl, opcImageUrl, opdImageUrl
+                      ) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(id) DO UPDATE SET
+                         subjectId=excluded.subjectId,
+                         topicId=excluded.topicId,
+                         examType=excluded.examType,
+                         examYear=excluded.examYear,
+                         questionText=excluded.questionText,
+                         opa=excluded.opa,
+                         opb=excluded.opb,
+                         opc=excluded.opc,
+                         opd=excluded.opd,
+                         correctOption=excluded.correctOption,
+                         explanation=excluded.explanation,
+                         imageUrl=excluded.imageUrl,
+                         explanationImageUrl=excluded.explanationImageUrl,
+                         opaImageUrl=excluded.opaImageUrl,
+                         opbImageUrl=excluded.opbImageUrl,
+                         opcImageUrl=excluded.opcImageUrl,
+                         opdImageUrl=excluded.opdImageUrl`,
+                      [
+                        q.id,
+                        q.subjectId,
+                        q.topicId,
+                        q.examType || null,
+                        q.examYear || null,
+                        q.questionText,
+                        q.opa,
+                        q.opb,
+                        q.opc,
+                        q.opd,
+                        q.correctOption,
+                        q.explanation || null,
+                        q.imageUrl || null,
+                        q.explanationImageUrl || null,
+                        q.opaImageUrl || null,
+                        q.opbImageUrl || null,
+                        q.opcImageUrl || null,
+                        q.opdImageUrl || null
+                      ]
+                    );
+                  }
+                });
+              }
+            }
           }
-        });
+        } else {
+          console.log(`Inline downloading subject ${subj.name} from CDN...`);
+          const res = await fetch(`${cdnUrl}/packs/subject_${subj.id}.json`);
+
+          if (!res.ok) {
+            throw new Error(`Failed to download ${subj.name} pack (HTTP ${res.status})`);
+          }
+
+          const rawQuestions = await res.json();
+          if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+            throw new Error(`Empty or invalid question pack for ${subj.name}`);
+          }
+
+          // Map correctOption to 1-indexed locally for frontend compatibility (0=A => 1, etc.)
+          const formattedQuestions = rawQuestions.map((q: any) => ({
+            ...q,
+            correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+              ? q.correctOption + 1
+              : q.correctOption,
+          }));
+
+          await sqlite.withTransactionAsync(async () => {
+            for (const q of formattedQuestions) {
+              await sqlite.runAsync(
+                `INSERT INTO questions (
+                  id, subjectId, topicId, examType, examYear, questionText, opa, opb, opc, opd, correctOption, explanation,
+                  imageUrl, explanationImageUrl, opaImageUrl, opbImageUrl, opcImageUrl, opdImageUrl
+                ) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON CONFLICT(id) DO UPDATE SET
+                   subjectId=excluded.subjectId,
+                   topicId=excluded.topicId,
+                   examType=excluded.examType,
+                   examYear=excluded.examYear,
+                   questionText=excluded.questionText,
+                   opa=excluded.opa,
+                   opb=excluded.opb,
+                   opc=excluded.opc,
+                   opd=excluded.opd,
+                   correctOption=excluded.correctOption,
+                   explanation=excluded.explanation,
+                   imageUrl=excluded.imageUrl,
+                   explanationImageUrl=excluded.explanationImageUrl,
+                   opaImageUrl=excluded.opaImageUrl,
+                   opbImageUrl=excluded.opbImageUrl,
+                   opcImageUrl=excluded.opcImageUrl,
+                   opdImageUrl=excluded.opdImageUrl`,
+                [
+                  q.id,
+                  q.subjectId,
+                  q.topicId,
+                  q.examType || null,
+                  q.examYear || null,
+                  q.questionText,
+                  q.opa,
+                  q.opb,
+                  q.opc,
+                  q.opd,
+                  q.correctOption,
+                  q.explanation || null,
+                  q.imageUrl || null,
+                  q.explanationImageUrl || null,
+                  q.opaImageUrl || null,
+                  q.opbImageUrl || null,
+                  q.opcImageUrl || null,
+                  q.opdImageUrl || null
+                ]
+              );
+            }
+          });
+        }
         
         // Update local state count
         setSubjectSeededCounts(prev => ({
           ...prev,
-          [subj.id]: formattedQuestions.length
+          [subj.id]: subj.id === NEET_PG_PYQ_SUBJECT.id ? NEET_PG_PYQ_SUBJECT.count : (subjectSeededCounts[subj.id] || 0) // rough estimation for state
         }));
       }
+
+      // Recheck actual seeded counts from database
+      const sqliteRefresh = await getDB();
+      const rows = await sqliteRefresh.getAllAsync<{ subjectId: number; count: number }>(
+        'SELECT subjectId, COUNT(id) as count FROM questions GROUP BY subjectId'
+      );
+      const newSeededCounts: Record<number, number> = {};
+      allSubjectsList.forEach(s => newSeededCounts[s.id] = 0);
+      rows.forEach(r => newSeededCounts[r.subjectId] = r.count);
+      const pyqRow = await sqliteRefresh.getFirstAsync<{ count: number }>(
+        "SELECT COUNT(id) as count FROM questions WHERE examType = 'NEET PG'"
+      );
+      newSeededCounts[NEET_PG_PYQ_SUBJECT.id] = pyqRow?.count || 0;
+      setSubjectSeededCounts(newSeededCounts);
 
       // Refresh matched questions count before starting
       let newCount = 0;
       let finalLimit = 0;
       const topicIdsParam = selectedTopicIds.length > 0 ? selectedTopicIds : undefined;
+      const pyqSelected = selectedSubjects.includes(NEET_PG_PYQ_SUBJECT.id);
+      const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : undefined;
       
       if (statusFilter === 'SPACED_REPETITION') {
         const counts = await getSpacedRepetitionCounts({ 
           subjectIds: selectedSubjects,
-          topicIds: topicIdsParam
+          topicIds: topicIdsParam,
+          examType: pyqSelected ? 'NEET PG' : undefined,
+          examYears: pyqSelected ? effectiveYears : undefined,
         });
         newCount = counts.due + counts.new;
         finalLimit = Math.min(questionLimit, counts.due + Math.min(newCardsLimit, counts.new));
@@ -411,6 +533,8 @@ export default function CustomCreatorScreen() {
           subjectIds: selectedSubjects,
           topicIds: topicIdsParam,
           status: statusFilter,
+          examType: pyqSelected ? 'NEET PG' : undefined,
+          examYears: pyqSelected ? effectiveYears : undefined,
         });
         finalLimit = Math.min(questionLimit, newCount);
       }
@@ -434,12 +558,14 @@ export default function CustomCreatorScreen() {
           newCardsLimit: statusFilter === 'SPACED_REPETITION' ? newCardsLimit : undefined,
           isMockTest: isMockTest ? 'true' : 'false',
           positiveMarks: Number(positiveMarks) || 4,
-          negativeMarks: enablePenalty ? (Number(negativeMarks) || 1) : 0
+          negativeMarks: enablePenalty ? (Number(negativeMarks) || 1) : 0,
+          examType: pyqSelected ? 'NEET PG' : undefined,
+          examYears: pyqSelected && effectiveYears ? effectiveYears.join(',') : undefined,
         }
       });
 
     } catch (err: any) {
-      console.warn('Inline download failed.');
+      console.warn('Inline download failed:', err);
       Alert.alert('Download Failed', 'Failed to retrieve question pack. Check your network connection and try again.');
     } finally {
       setIsDownloadingInline(false);
@@ -452,7 +578,7 @@ export default function CustomCreatorScreen() {
     selectedSubjects.forEach(sId => {
       const seeded = subjectSeededCounts[sId] || 0;
       if (seeded === 0) {
-        const subject = subjectsList.find(s => s.id === sId);
+        const subject = allSubjectsList.find(s => s.id === sId);
         if (subject) unseededSubjects.push({ id: sId, name: subject.name });
       }
     });
@@ -485,6 +611,10 @@ export default function CustomCreatorScreen() {
       return;
     }
     
+    const pyqSelected = selectedSubjects.includes(NEET_PG_PYQ_SUBJECT.id);
+    const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+    const effectiveYears = selectedYears.length > 0 ? selectedYears : undefined;
+
     // Route to practice suite with parameters
     router.push({
       pathname: '/practice-suite',
@@ -498,7 +628,9 @@ export default function CustomCreatorScreen() {
         newCardsLimit: statusFilter === 'SPACED_REPETITION' ? newCardsLimit : undefined,
         isMockTest: isMockTest ? 'true' : 'false',
         positiveMarks: Number(positiveMarks) || 4,
-        negativeMarks: enablePenalty ? (Number(negativeMarks) || 1) : 0
+        negativeMarks: enablePenalty ? (Number(negativeMarks) || 1) : 0,
+        examType: pyqSelected ? 'NEET PG' : undefined,
+        examYears: pyqSelected && effectiveYears ? effectiveYears.join(',') : undefined,
       }
     });
   };
@@ -531,7 +663,7 @@ export default function CustomCreatorScreen() {
         <Text style={[styles.stepTitle, { color: theme.text }]}>Step 1: Select Syllabus & Topics</Text>
         
         <View style={styles.treeContainer}>
-          {subjectsList.map(subj => {
+          {allSubjectsList.map(subj => {
             const isExpanded = expandedSubjects[subj.id] === true;
             const subtopicIds = getSubjectSubtopicIds(subj.id);
             const isAllSelected = subtopicIds.length > 0 && subtopicIds.every(id => selectedTopicIds.includes(id));
@@ -541,10 +673,27 @@ export default function CustomCreatorScreen() {
             // Get hierarchy for topics if expanded
             let hierarchy: any = null;
             if (isExpanded) {
-              try {
-                hierarchy = getSubjectHierarchy(subj.id);
-              } catch (err) {
-                console.warn("Failed to load subject hierarchy.");
+              if (subj.id === NEET_PG_PYQ_SUBJECT.id) {
+                hierarchy = {
+                  subjectId: NEET_PG_PYQ_SUBJECT.id,
+                  topics: [
+                    {
+                      name: 'NEET PG PYQs by Year',
+                      count: NEET_PG_PYQ_SUBJECT.count,
+                      subTopics: PYQ_PAPERS.map(p => ({
+                        id: -p.year,
+                        name: p.name,
+                        count: p.count,
+                      })),
+                    },
+                  ],
+                };
+              } else {
+                try {
+                  hierarchy = getSubjectHierarchy(subj.id);
+                } catch (err) {
+                  console.warn("Failed to load subject hierarchy.");
+                }
               }
             }
 

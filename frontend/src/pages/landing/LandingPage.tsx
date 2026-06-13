@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Search,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -107,6 +108,26 @@ export function LandingPage({
     { id: 2, text: 'Target 3 Pharmacology Weak Spots', done: false, points: '+30 Points' },
     { id: 3, text: 'Review 1 Physiology bookmarked question', done: false, points: '+15 Points' },
   ]);
+
+  // GitHub Stars State
+  const [gitHubStars, setGitHubStars] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('https://api.github.com/repos/Riso19/openmedq')
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch stars');
+      })
+      .then((data) => {
+        const repoInfo = data as { stargazers_count?: number };
+        if (repoInfo && typeof repoInfo.stargazers_count === 'number') {
+          setGitHubStars(repoInfo.stargazers_count);
+        }
+      })
+      .catch((err) => {
+        console.warn('GitHub star fetch failed:', err);
+      });
+  }, []);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -263,11 +284,6 @@ export function LandingPage({
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-clay-muted">
-          <a href="#sandbox" className="hover:text-clay-ink transition-colors duration-200">Interactive MCQ</a>
-          <a href="#manifesto" className="hover:text-clay-ink transition-colors duration-200">Manifesto</a>
-          <a href="#features" className="hover:text-clay-ink transition-colors duration-200">Features</a>
-          <a href="#developer-story" className="hover:text-clay-ink transition-colors duration-200">Developer Story</a>
-          <a href="#faq" className="hover:text-clay-ink transition-colors duration-200">FAQ</a>
           <button onClick={onViewRoadmap} className="hover:text-clay-ink transition-colors duration-200 bg-transparent border-0 p-0 font-semibold text-sm cursor-pointer">Roadmap</button>
           <button onClick={onViewContribute} className="hover:text-clay-ink transition-colors duration-200 bg-transparent border-0 p-0 font-semibold text-sm cursor-pointer">Contribute</button>
         </nav>
@@ -275,6 +291,20 @@ export function LandingPage({
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
+          <a
+            href="https://github.com/Riso19/openmedq"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-clay-hairline hover:bg-clay-surface-soft text-clay-ink rounded-clay-md text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer"
+          >
+            <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-500" />
+            <span>Star</span>
+            {gitHubStars !== null && (
+              <span className="bg-clay-surface-soft px-1.5 py-0.5 rounded text-[10px] text-clay-muted border-l border-clay-hairline ml-1">
+                {gitHubStars}
+              </span>
+            )}
+          </a>
           <SignedOut>
             <button
               onClick={onSignIn}
@@ -314,11 +344,6 @@ export function LandingPage({
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-[73px] bottom-0 bg-clay-canvas/95 backdrop-blur-md z-40 border-t border-clay-hairline p-6 pb-10 flex flex-col justify-between overflow-y-auto scrollbar-none animate-[fadeIn_0.2s_ease-out]">
           <nav className="flex flex-col gap-6 text-base font-semibold text-clay-ink text-left">
-            <a href="#sandbox" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-clay-hairline hover:text-clay-pink">Interactive MCQ</a>
-            <a href="#manifesto" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-clay-hairline hover:text-clay-pink">Manifesto</a>
-            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-clay-hairline hover:text-clay-pink">Features</a>
-            <a href="#developer-story" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-clay-hairline hover:text-clay-pink">Developer Story</a>
-            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-clay-hairline hover:text-clay-pink">FAQ</a>
             <button 
               onClick={() => { 
                 setIsMobileMenuOpen(false); 
@@ -343,6 +368,23 @@ export function LandingPage({
             <div className="flex items-center justify-between py-2 px-1 border-b border-clay-hairline">
               <span className="text-xs font-bold text-clay-muted">Theme</span>
               <ThemeToggle />
+            </div>
+            <div className="flex items-center justify-between py-2 px-1 border-b border-clay-hairline">
+              <span className="text-xs font-bold text-clay-muted">GitHub</span>
+              <a
+                href="https://github.com/Riso19/openmedq"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-clay-hairline hover:bg-clay-surface-soft text-clay-ink rounded-clay-md text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer"
+              >
+                <Star className="w-3.5 h-3.5 fill-amber-400 stroke-amber-500" />
+                <span>Star</span>
+                {gitHubStars !== null && (
+                  <span className="bg-clay-surface-soft px-1.5 py-0.5 rounded text-[10px] text-clay-muted border-l border-clay-hairline ml-1">
+                    {gitHubStars}
+                  </span>
+                )}
+              </a>
             </div>
             <SignedOut>
               <button
@@ -882,7 +924,7 @@ export function LandingPage({
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <a
-                href="https://github.com/openmedq/openmedq"
+                href="https://github.com/Riso19/openmedq"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-clay-ink hover:bg-neutral-800 text-white font-bold px-6 py-3 rounded-clay-md text-xs transition-all duration-200 cursor-pointer text-center"
@@ -1348,7 +1390,7 @@ export function LandingPage({
               <span className="text-xs font-bold uppercase tracking-wider text-clay-ink">Community & Roadmap</span>
               <button onClick={onViewRoadmap} className="text-xs text-clay-muted hover:text-clay-ink transition-colors text-left bg-transparent border-0 p-0 cursor-pointer">Product Roadmap</button>
               <button onClick={onViewContribute} className="text-xs text-clay-muted hover:text-clay-ink transition-colors text-left bg-transparent border-0 p-0 cursor-pointer">Submit Corrections & Contribute</button>
-              <a href="https://github.com/openmedq/openmedq" target="_blank" rel="noopener noreferrer" className="text-xs text-clay-muted hover:text-clay-ink transition-colors">GitHub Repository</a>
+              <a href="https://github.com/Riso19/openmedq" target="_blank" rel="noopener noreferrer" className="text-xs text-clay-muted hover:text-clay-ink transition-colors">GitHub Repository</a>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -1367,14 +1409,14 @@ export function LandingPage({
           
           <div className="text-left">
             <span>© {new Date().getFullYear()} OpenMedQ. Code licensed under </span>
-            <a href="https://github.com/openmedq/openmedq" target="_blank" rel="noopener noreferrer" className="hover:text-clay-pink underline">MIT</a>
+            <a href="https://github.com/Riso19/openmedq" target="_blank" rel="noopener noreferrer" className="hover:text-clay-pink underline">MIT</a>
             <span>. Content under </span>
             <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="hover:text-clay-pink underline">CC-BY-SA 4.0</a>
             <span>.</span>
           </div>
 
           <div className="flex gap-4">
-            <a href="https://github.com/openmedq/openmedq" target="_blank" rel="noopener noreferrer" className="hover:text-clay-pink transition-colors">GitHub</a>
+            <a href="https://github.com/Riso19/openmedq" target="_blank" rel="noopener noreferrer" className="hover:text-clay-pink transition-colors">GitHub</a>
             <span>•</span>
             <a href="#" className="hover:text-clay-pink transition-colors">Status</a>
           </div>

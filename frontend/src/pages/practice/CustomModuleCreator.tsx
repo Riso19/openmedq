@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Timer, Play, CheckSquare, Square, RefreshCw, HelpCircle } from 'lucide-react';
-import { subjectsList } from '../../lib/subjects';
+import { allSubjectsList, PYQ_PAPERS } from '../../lib/subjects';
 import { db, getFilteredQuestionsCount, getSpacedRepetitionCounts } from '../../lib/db';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { getSubjectHierarchy } from '../../lib/hierarchy';
@@ -21,6 +21,7 @@ export interface CustomModuleConfig {
   newCardsLimit?: number;
   examType?: string;
   examYear?: number;
+  examYears?: number[];
 }
 
 interface CustomModuleCreatorProps {
@@ -54,73 +55,145 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
   const [isLoadingCount, setIsLoadingCount] = useState<boolean>(false);
   const [syncingSubjects, setSyncingSubjects] = useState<number[]>([]);
 
-  // Background caching for unseeded subjects from remote R2 bucket
+  // Background caching for unseeded subjects / years from remote R2 bucket
   useEffect(() => {
-    const checkAndCacheSubjects = async () => {
-      const subjectsToSync: number[] = [];
-      
-      for (const subjId of selectedSubjects) {
-        const subject = subjectsList.find(s => s.id === subjId);
-        const expectedCount = subject ? subject.count : 0;
-        const localCount = await db.questions.where('subjectId').equals(subjId).count();
-        if (localCount < expectedCount) {
-          subjectsToSync.push(subjId);
+    const checkAndCache = async () => {
+      const pyqSelected = selectedSubjects.includes(99);
+      const standardSubjects = selectedSubjects.filter(id => id !== 99);
+
+      if (pyqSelected) {
+        const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+        const effectiveYears = selectedYears.length > 0 ? selectedYears : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018];
+        const yearsToSync: number[] = [];
+
+        for (const year of effectiveYears) {
+          const paper = PYQ_PAPERS.find(p => p.year === year);
+          const expectedCount = paper ? paper.count : 0;
+          const localQuestions = await db.questions.where('examType').equals('NEET PG').toArray();
+          const localCount = localQuestions.filter(q => q.examYear === year).length;
+          if (localCount < expectedCount) {
+            yearsToSync.push(year);
+          }
+        }
+
+        if (yearsToSync.length > 0) {
+          setSyncingSubjects(prev => [...new Set([...prev, ...yearsToSync])]);
+
+          for (const year of yearsToSync) {
+            try {
+              const cdnUrl = import.meta.env.VITE_CDN_URL || `${import.meta.env.VITE_API_URL || ''}/api/assets`;
+              const res = await fetch(`${cdnUrl}/packs/neet_pg_${year}.json`);
+
+              if (res.ok) {
+                const rawQuestions = await res.json();
+                if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+                  const formatted = rawQuestions.map((q: any) => ({
+                    id: q.id,
+                    questionText: q.questionText,
+                    opa: q.opa,
+                    opb: q.opb,
+                    opc: q.opc,
+                    opd: q.opd,
+                    correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+                      ? q.correctOption + 1
+                      : q.correctOption,
+                    subjectId: q.subjectId,
+                    topicId: q.topicId,
+                    examType: q.examType || undefined,
+                    examYear: q.examYear || undefined,
+                    explanation: q.explanation || 'This NEET PG PYQ recall question was fetched dynamically from OpenMedQ CDN.',
+                    imageUrl: q.imageUrl || undefined,
+                    explanationImageUrl: q.explanationImageUrl || undefined,
+                    opaImageUrl: q.opaImageUrl || undefined,
+                    opbImageUrl: q.opbImageUrl || undefined,
+                    opcImageUrl: q.opcImageUrl || undefined,
+                    opdImageUrl: q.opdImageUrl || undefined,
+                  }));
+
+                  // Save to IndexedDB via fast bulkPut
+                  await db.questions.bulkPut(formatted);
+                }
+              }
+            } catch (err) {
+              console.warn("Failed to retrieve question pack updates.");
+            } finally {
+              setSyncingSubjects(prev => prev.filter(y => y !== year));
+            }
+          }
         }
       }
 
-      if (subjectsToSync.length === 0) return;
+      if (standardSubjects.length > 0) {
+        const subjectsToSync: number[] = [];
 
-      // Add to syncing list
-      setSyncingSubjects(prev => [...new Set([...prev, ...subjectsToSync])]);
-
-      for (const subjId of subjectsToSync) {
-        try {
-          const cdnUrl = import.meta.env.VITE_CDN_URL || `${import.meta.env.VITE_API_URL || ''}/api/assets`;
-          const res = await fetch(`${cdnUrl}/packs/subject_${subjId}.json`);
-          
-          if (res.ok) {
-            const rawQuestions = await res.json();
-            if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
-              const formatted = rawQuestions.map((q: any) => ({
-                id: q.id,
-                questionText: q.questionText,
-                opa: q.opa,
-                opb: q.opb,
-                opc: q.opc,
-                opd: q.opd,
-                correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
-                  ? q.correctOption + 1
-                  : q.correctOption,
-                subjectId: q.subjectId,
-                topicId: q.topicId,
-                examType: q.examType || undefined,
-                examYear: q.examYear || undefined,
-                explanation: q.explanation || 'This high-yield question pack was fetched dynamically from OpenMedQ CDN servers.',
-                imageUrl: q.imageUrl || undefined,
-                explanationImageUrl: q.explanationImageUrl || undefined,
-                opaImageUrl: q.opaImageUrl || undefined,
-                opbImageUrl: q.opbImageUrl || undefined,
-                opcImageUrl: q.opcImageUrl || undefined,
-                opdImageUrl: q.opdImageUrl || undefined,
-              }));
-
-              // Save to IndexedDB via fast bulkPut
-              await db.questions.bulkPut(formatted);
-            }
+        for (const subjId of standardSubjects) {
+          const subject = allSubjectsList.find(s => s.id === subjId);
+          const expectedCount = subject ? subject.count : 0;
+          const localCount = await db.questions.where('subjectId').equals(subjId).count();
+          if (localCount < expectedCount) {
+            subjectsToSync.push(subjId);
           }
-        } catch (err) {
-          console.warn("Failed to retrieve question pack updates.");
-        } finally {
-          setSyncingSubjects(prev => prev.filter(id => id !== subjId));
+        }
+
+        if (subjectsToSync.length === 0) return;
+
+        // Add to syncing list
+        setSyncingSubjects(prev => [...new Set([...prev, ...subjectsToSync])]);
+
+        for (const subjId of subjectsToSync) {
+          try {
+            const cdnUrl = import.meta.env.VITE_CDN_URL || `${import.meta.env.VITE_API_URL || ''}/api/assets`;
+            const res = await fetch(`${cdnUrl}/packs/subject_${subjId}.json`);
+
+            if (res.ok) {
+              const rawQuestions = await res.json();
+              if (Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+                const formatted = rawQuestions.map((q: any) => ({
+                  id: q.id,
+                  questionText: q.questionText,
+                  opa: q.opa,
+                  opb: q.opb,
+                  opc: q.opc,
+                  opd: q.opd,
+                  correctOption: typeof q.correctOption === 'number' && q.correctOption >= 0 && q.correctOption <= 3
+                    ? q.correctOption + 1
+                    : q.correctOption,
+                  subjectId: q.subjectId,
+                  topicId: q.topicId,
+                  examType: q.examType || undefined,
+                  examYear: q.examYear || undefined,
+                  explanation: q.explanation || 'This high-yield question pack was fetched dynamically from OpenMedQ CDN servers.',
+                  imageUrl: q.imageUrl || undefined,
+                  explanationImageUrl: q.explanationImageUrl || undefined,
+                  opaImageUrl: q.opaImageUrl || undefined,
+                  opbImageUrl: q.opbImageUrl || undefined,
+                  opcImageUrl: q.opcImageUrl || undefined,
+                  opdImageUrl: q.opdImageUrl || undefined,
+                }));
+
+                // Save to IndexedDB via fast bulkPut
+                await db.questions.bulkPut(formatted);
+              }
+            }
+          } catch (err) {
+            console.warn("Failed to retrieve question pack updates.");
+          } finally {
+            setSyncingSubjects(prev => prev.filter(id => id !== subjId));
+          }
         }
       }
 
       // Refresh matched count once seeding completes
       let count = 0;
+      const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+      const effectiveYears = selectedYears.length > 0 ? selectedYears : undefined;
+
       if (statusFilter === 'SPACED_REPETITION') {
         const counts = await getSpacedRepetitionCounts({
           subjectIds: selectedSubjects,
           topicIds: selectedTopicIds.length > 0 ? selectedTopicIds : undefined,
+          examType: pyqSelected ? 'NEET PG' : undefined,
+          examYears: pyqSelected ? effectiveYears : undefined,
         });
         setSrCounts(counts);
         count = counts.due + counts.new;
@@ -129,12 +202,14 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
           subjectIds: selectedSubjects,
           topicIds: selectedTopicIds.length > 0 ? selectedTopicIds : undefined,
           status: statusFilter,
+          examType: pyqSelected ? 'NEET PG' : undefined,
+          examYears: pyqSelected ? effectiveYears : undefined,
         });
       }
       setAvailableCount(count);
     };
 
-    checkAndCacheSubjects();
+    checkAndCache();
   }, [selectedSubjects, selectedTopicIds, statusFilter, newCardsLimit]);
 
   // Update real-time matched count from Dexie
@@ -143,10 +218,16 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
       setIsLoadingCount(true);
       try {
         let count = 0;
+        const pyqSelected = selectedSubjects.includes(99);
+        const selectedYears = selectedTopicIds.filter(id => id < 0).map(id => -id);
+        const effectiveYears = selectedYears.length > 0 ? selectedYears : undefined;
+
         if (statusFilter === 'SPACED_REPETITION') {
           const counts = await getSpacedRepetitionCounts({
             subjectIds: selectedSubjects,
             topicIds: selectedTopicIds.length > 0 ? selectedTopicIds : undefined,
+            examType: pyqSelected ? 'NEET PG' : undefined,
+            examYears: pyqSelected ? effectiveYears : undefined,
           });
           setSrCounts(counts);
           count = counts.due + counts.new;
@@ -155,6 +236,8 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
             subjectIds: selectedSubjects,
             topicIds: selectedTopicIds.length > 0 ? selectedTopicIds : undefined,
             status: statusFilter,
+            examType: pyqSelected ? 'NEET PG' : undefined,
+            examYears: pyqSelected ? effectiveYears : undefined,
           });
         }
         setAvailableCount(count);
@@ -216,8 +299,9 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
   const handleSelectAllTopicsForSubject = (subjectId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const hierarchy = getSubjectHierarchy(subjectId);
-    const subTopicIds = hierarchy.topics.flatMap((t) => t.subTopics.map((s) => s.id));
+    const subTopicIds = subjectId === 99
+      ? PYQ_PAPERS.map(p => -p.year)
+      : getSubjectHierarchy(subjectId).topics.flatMap((t) => t.subTopics.map((s) => s.id));
 
     setSelectedTopicIds(prev => {
       const filtered = prev.filter(id => !subTopicIds.includes(id));
@@ -231,7 +315,7 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
   };
 
   const selectAllSubjects = () => {
-    setSelectedSubjects(subjectsList.map(s => s.id));
+    setSelectedSubjects(allSubjectsList.map((s: { id: number }) => s.id));
   };
 
   const clearAllSubjects = () => {
@@ -309,6 +393,12 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
       marksPerQuestion: isMockTest ? marksPerQuestion : undefined,
       negativeMarking: isMockTest && negativeMarkingEnabled ? negativeMarkValue : 0,
       newCardsLimit: statusFilter === 'SPACED_REPETITION' ? newCardsLimit : undefined,
+      examType: selectedSubjects.includes(99) ? 'NEET PG' : undefined,
+      examYears: selectedSubjects.includes(99)
+        ? (selectedTopicIds.some(id => id < 0)
+            ? selectedTopicIds.filter(id => id < 0).map(id => -id)
+            : undefined)
+        : undefined,
     });
   };
 
@@ -369,7 +459,7 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-            {subjectsList.map(subj => {
+            {allSubjectsList.map(subj => {
               const isSelected = selectedSubjects.includes(subj.id);
               return (
                 <button
@@ -401,14 +491,29 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
                 Filter Specific Topics (Optional)
               </span>
               <p className="text-[10px] text-clay-muted mb-4">
-                If no topics are selected below, the test will include all questions from the selected subjects.
+                If no topics or years are selected below, the test will include all questions from the selected subjects and papers.
               </p>
               
               <div className="space-y-4">
                 {selectedSubjects.map(subjectId => {
-                  const subject = subjectsList.find(s => s.id === subjectId);
+                  const subject = allSubjectsList.find(s => s.id === subjectId);
                   if (!subject) return null;
-                  const hierarchy = getSubjectHierarchy(subjectId);
+                  const hierarchy = subjectId === 99
+                    ? {
+                        subjectId: 99,
+                        topics: [
+                          {
+                            name: 'NEET PG PYQs by Year',
+                            count: subject.count,
+                            subTopics: PYQ_PAPERS.map(p => ({
+                              id: -p.year,
+                              name: p.name,
+                              count: p.count,
+                            })),
+                          },
+                        ],
+                      }
+                    : getSubjectHierarchy(subjectId);
                   
                   return (
                     <details 
@@ -834,7 +939,14 @@ export function CustomModuleCreator({ onBack, onStart }: CustomModuleCreatorProp
 
           <button
             onClick={handleStart}
-            disabled={isLoadingCount || syncingSubjects.length > 0 || (statusFilter === 'SPACED_REPETITION' ? (srCounts.due + srCounts.new === 0) : availableCount === 0) || selectedSubjects.length === 0 || !!validationError || !!timerValidationError}
+            disabled={
+              isLoadingCount || 
+              syncingSubjects.length > 0 || 
+              (statusFilter === 'SPACED_REPETITION' ? (srCounts.due + srCounts.new === 0) : availableCount === 0) || 
+              selectedSubjects.length === 0 || 
+              !!validationError || 
+              !!timerValidationError
+            }
             className="w-full md:w-auto bg-clay-ink hover:bg-neutral-800 disabled:bg-clay-surface-strong disabled:text-clay-muted disabled:cursor-not-allowed text-white font-bold h-12 px-8 rounded-clay-md shadow-sm active:scale-98 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer text-sm"
           >
             <span>Start Practice Test</span>
