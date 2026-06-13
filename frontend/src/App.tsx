@@ -19,6 +19,31 @@ import { Roadmap } from './pages/roadmap/Roadmap';
 
 import { useTheme } from './components/theme-provider';
 
+const getInitialView = (): 'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap' => {
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  
+  if (path === '/privacy' || path === '/privacy-policy' || hash === '#privacy' || hash === '#privacy-policy') {
+    return 'privacy_policy';
+  }
+  if (path === '/terms' || path === '/terms-conditions' || hash === '#terms' || hash === '#terms-conditions') {
+    return 'terms_conditions';
+  }
+  if (path === '/disclaimer' || hash === '#disclaimer') {
+    return 'disclaimer';
+  }
+  if (path === '/dmca' || path === '/dmca-policy' || hash === '#dmca' || hash === '#dmca-policy') {
+    return 'dmca_policy';
+  }
+  if (path === '/contribute' || hash === '#contribute') {
+    return 'contribute';
+  }
+  if (path === '/roadmap' || hash === '#roadmap') {
+    return 'roadmap';
+  }
+  return 'landing';
+};
+
 function App() {
   const { theme } = useTheme();
   const [isDark, setIsDark] = useState<boolean>(false);
@@ -71,7 +96,7 @@ function App() {
 
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
-  const [view, setView] = useState<'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap'>('landing');
+  const [view, setView] = useState<'landing' | 'auth' | 'custom_creator' | 'custom_practice' | 'dashboard' | 'stats' | 'leaderboard' | 'privacy_policy' | 'terms_conditions' | 'disclaimer' | 'dmca_policy' | 'contribute' | 'roadmap'>(getInitialView);
 
   const [customModuleConfig, setCustomModuleConfig] = useState<CustomModuleConfig | null>(null);
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');

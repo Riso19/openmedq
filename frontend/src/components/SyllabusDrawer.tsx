@@ -493,7 +493,7 @@ export function SyllabusDrawer({ subjectId, onClose, onPractice }: SyllabusDrawe
         onClick={onClose}
       />
 
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="absolute inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         {/* Sliding Panel */}
         <div className="w-screen max-w-md bg-clay-canvas border-l border-clay-hairline shadow-2xl flex flex-col justify-between animate-[slideInRight_0.3s_cubic-bezier(0.16,1,0.3,1)]">
           

@@ -1820,7 +1820,7 @@ export function PracticeSuite({ config, onExit, onProgressUpdate, resumeActiveSe
               </>
             ) : (
               config.status === 'SPACED_REPETITION' && isExplanationRevealed && fsrsPreviews ? (
-                <div className="flex-1 flex gap-2 justify-end pl-4">
+                <div className="w-full sm:w-auto flex-1 flex gap-1.5 sm:gap-2 justify-between sm:justify-end sm:pl-4">
                   {[
                     { rating: Rating.Again, label: 'Forgot', color: 'bg-clay-pink text-white hover:opacity-90' },
                     { rating: Rating.Hard, label: 'Hard', color: 'bg-clay-peach text-clay-ink hover:opacity-90' },
@@ -1832,7 +1832,7 @@ export function PracticeSuite({ config, onExit, onProgressUpdate, resumeActiveSe
                       <button
                         key={item.rating}
                         onClick={() => handleFSRSRate(item.rating)}
-                        className={`flex flex-col items-center justify-center rounded-clay-md py-1.5 px-3 min-w-[70px] transition-all cursor-pointer text-center duration-200 active:scale-95 shadow-sm ${item.color}`}
+                        className={`flex-1 sm:flex-initial flex flex-col items-center justify-center rounded-clay-md py-1.5 px-2 sm:px-3 sm:min-w-[70px] transition-all cursor-pointer text-center duration-200 active:scale-95 shadow-sm ${item.color}`}
                       >
                         <span className="text-[11px] font-bold leading-tight">{item.label}</span>
                         <span className="text-[9px] opacity-90 font-medium">
