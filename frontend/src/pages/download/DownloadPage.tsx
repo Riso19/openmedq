@@ -6,7 +6,7 @@ interface DownloadPageProps {
 }
 
 const CONFIG = {
-  HASH_URL: "https://cdn.openmedq.com/builds/openmedq-latest.apk.sha256",
+  HASH_URL: "https://github.com/Riso19/openmedq/releases/download/v1.0.0/openmedq-latest.apk.sha256",
   FETCH_TIMEOUT_MS: 5000,
   RETRY_COUNT: 3,
 };
@@ -37,8 +37,9 @@ export function DownloadPage({ onBack }: DownloadPageProps) {
       .then(text => {
         if (!isMountedRef.current) return;
         const cleanHash = text.trim();
-        if (/^[a-fA-F0-9]{64}$/.test(cleanHash)) {
-          setDownloadHash(cleanHash);
+        const match = cleanHash.match(/^[a-fA-F0-9]{64}/);
+        if (match) {
+          setDownloadHash(match[0]);
           setHashError(false);
           setHashLoading(false);
         } else {
@@ -234,7 +235,7 @@ export function DownloadPage({ onBack }: DownloadPageProps) {
             </div>
 
             <a
-              href="https://cdn.openmedq.com/builds/openmedq-latest.apk"
+              href="https://github.com/Riso19/openmedq/releases/download/v1.0.0/openmedq-latest.apk"
               className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-clay-ink text-white hover:bg-neutral-800 dark:hover:bg-neutral-200 font-bold text-xs sm:text-sm rounded-clay-md transition-colors cursor-pointer text-center"
             >
               <Download className="w-4 h-4" />

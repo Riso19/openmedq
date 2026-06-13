@@ -69,3 +69,7 @@ android/
 
 # Large local parsing and ingestion data
 data/
+
+# Local build artifacts
+*.apk
+*.apk.sha256
