@@ -1,0 +1,4 @@
+## 2024-06-13 - [CORS Configuration Misconfiguration and Missing Security Headers]
+**Vulnerability:** A loose check `origin.endsWith('.openmedq.pages.dev')` in the CORS handler allowed requests from domains like `https://attackeropenmedq.pages.dev`. Additionally, the backend was completely lacking basic security headers like `X-Content-Type-Options`, `Strict-Transport-Security`, `X-Frame-Options`, and others.
+**Learning:** Checking for substrings or endings of domains in CORS is dangerous. Attackers can register domains that match the suffix. Security headers must be explicitly configured as frameworks often do not add them by default.
+**Prevention:** Use secure regex patterns (e.g. `/^https:\/\/[a-z0-9-]+\.openmedq\.pages\.dev$/i`) for dynamic subdomains. Incorporate `secureHeaders` middleware from the framework (e.g., `hono/secure-headers`) for defense in depth.

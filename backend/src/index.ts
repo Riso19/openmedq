@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { clerkMiddleware, getAuth } from '@clerk/hono';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, and, desc, sql, asc, or, gt, lt } from 'drizzle-orm';
 import * as schema from './db/schema';
@@ -95,7 +96,7 @@ app.use('*', async (c, next) => {
       if (!origin) return ALLOWED_ORIGINS[0];
       if (
         ALLOWED_ORIGINS.includes(origin) ||
-        origin.endsWith('.openmedq.pages.dev') ||
+        /^https:\/\/[a-z0-9-]+\.openmedq\.pages\.dev$/i.test(origin) ||
         (isDev && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')))
       ) {
         return origin;
@@ -115,6 +116,7 @@ app.use('*', async (c, next) => {
 app.use('/api/*', rateLimiter(120, 60 * 1000));
 
 // Apply Clerk middleware globally
+app.use('*', secureHeaders());
 app.use('*', clerkMiddleware());
 
 // Input validation schemas
