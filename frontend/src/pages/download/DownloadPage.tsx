@@ -6,7 +6,7 @@ interface DownloadPageProps {
 }
 
 const CONFIG = {
-  HASH_URL: "https://github.com/Riso19/openmedq/releases/download/v1.0.0/openmedq-latest.apk.sha256",
+  HASH_URL: "/openmedq-latest.apk.sha256",
   FETCH_TIMEOUT_MS: 5000,
   RETRY_COUNT: 3,
 };
