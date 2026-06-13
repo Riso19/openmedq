@@ -58,5 +58,8 @@ This directory logs updates, deprecated patterns, and common mistakes encountere
 * [logo_theme_and_asset_optimization_standards.md](file:///Users/sain/development/openmedq/context/updates/logo_theme_and_asset_optimization_standards.md):
   * **Category**: New info learned via development / Architecture standards.
   * **Description**: Standards for logo downsampling size reduction, dynamic theme-based swapping, and conforming startup animated icons to solid layouts.
+* [github_releases_cors_limitations.md](file:///Users/sain/development/openmedq/context/updates/github_releases_cors_limitations.md):
+  * **Category**: Common mistakes to avoid / Architecture standards.
+  * **Description**: Standards for handling GitHub release download CORS blocking by using relative same-origin files to host SHA-256 integrity checksums.
 
 
