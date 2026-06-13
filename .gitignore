@@ -73,3 +73,4 @@ data/
 # Local build artifacts
 *.apk
 *.apk.sha256
+!frontend/public/openmedq-latest.apk.sha256

@@ -235,7 +235,7 @@ export function DownloadPage({ onBack }: DownloadPageProps) {
             </div>
 
             <a
-              href="https://github.com/Riso19/openmedq/releases/download/v1.0.0/openmedq-latest.apk"
+              href="/openmedq-latest.apk"
               className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-clay-ink text-white hover:bg-neutral-800 dark:hover:bg-neutral-200 font-bold text-xs sm:text-sm rounded-clay-md transition-colors cursor-pointer text-center"
             >
               <Download className="w-4 h-4" />
