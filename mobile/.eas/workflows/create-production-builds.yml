@@ -5,7 +5,3 @@ jobs:
     type: build # This job type creates a production build for Android
     params:
       platform: android
-  build_ios:
-    type: build # This job type creates a production build for iOS
-    params:
-      platform: ios
