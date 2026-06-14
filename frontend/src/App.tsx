@@ -147,8 +147,12 @@ function App() {
                 required: ['subjectId']
               },
               execute: async (args: { subjectId: number }) => {
+                const subId = Number(args.subjectId);
+                if (isNaN(subId) || subId < 1 || subId > 19) {
+                  return { success: false, error: `Invalid subjectId: ${args.subjectId}. The subjectId must be a number between 1 and 19 inclusive.` };
+                }
                 setCustomModuleConfig({
-                  subjectIds: [args.subjectId],
+                  subjectIds: [subId],
                   status: 'ALL',
                   timerMode: 'STOPWATCH',
                   timerValue: 0,
@@ -156,7 +160,7 @@ function App() {
                   isStandard: true
                 });
                 setView('custom_practice');
-                return { success: true, message: `Started practice session for subject ID ${args.subjectId}` };
+                return { success: true, message: `Started practice session for subject ID ${subId}` };
               }
             },
             {

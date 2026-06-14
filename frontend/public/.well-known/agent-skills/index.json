@@ -6,7 +6,7 @@
       "type": "action",
       "description": "Search and retrieve high-yield medical multiple choice questions (MCQs) across 19 MBBS subjects.",
       "url": "https://api.openmedq.com/api/questions/pack",
-      "sha256": "8f41857948f65809f6b4ffae278fbfbfcfbfcfdfefefcf49b389432f41b2cdef"
+      "sha256": "c47146d3056b3a57871d3a1b2c5c6f5918ae22c09cc1523cdb73379f7ad35f97"
     }
   ]
 }
