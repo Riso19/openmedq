@@ -57,6 +57,21 @@ The PAAR system is designed to simplify applications by separating basic details
 
 ![AIIMS PAAR 3-Step Registration Process for INI-CET Exam Infographic](/blog/inicet-registration-flow.png)
 
+### AIIMS PAAR Photo & Image Upload Specifications
+Adhering strictly to AIIMS PAAR image guidelines is the most critical factor to prevent application rejection. If your images do not meet the precise digital standards, your registration will be marked "Rejected" during the basic validation window.
+
+Ensure your uploads meet the following checklist:
+* **Color Photograph**:
+  * Must be taken against a **white background** (colored or patterned backgrounds are rejected).
+  * Dimensions must be **3.5 cm x 4.5 cm** (JPEG/JPG format, file size **20 KB to 100 KB**).
+  * Your face must occupy at least 70-80% of the image, looking directly at the camera with both ears visible. No spectacles with tinted lenses or caps.
+* **Signature**:
+  * Write your signature clearly on a white sheet of paper using a **black ballpoint pen** (blue ink or gel pens are often rejected due to poor scanner contrast).
+  * Scan and crop the signature area to **6.0 cm x 3.0 cm** (file size **10 KB to 50 KB**, JPG/JPEG format).
+* **Left Thumb Impression**:
+  * Press your left thumb onto a **blue or black ink pad**, then stamp it onto clean white paper.
+  * Scan and crop to **4.0 cm x 3.0 cm** (file size **10 KB to 50 KB**, JPG/JPEG format). Ensure the ridge patterns are clearly visible and not smudged.
+
 ---
 
 ## How many students appeared for the INI-CET 2025?
@@ -89,6 +104,45 @@ Follow these step-by-step instructions for each document:
 3. Click on the "Scorecard" tab.
 4. Download and print the PDF. Your scorecard will display your raw score, overall percentile, and All India Rank (AIR)^6^.
 *Note: The scorecard is usually released within 5 to 7 days of the result notification and is essential during the counseling process.*
+
+---
+
+## How does the INI-CET counselling and seat allocation process work?
+
+Once AIIMS New Delhi releases the percentiles and scorecards, the seat allocation and counselling process is conducted online via a series of choice-filling rounds.
+
+The admission flow consists of the following phases:
+1. **Mock Round (Round 0)**: Candidates submit their initial preferences of colleges and specialties. AIIMS runs a simulated allotment to show candidates what seat they would get based on current preferences. No seats are finalized in this round; it is purely to guide your final choice-filling strategy.
+2. **Round 1 & Round 2**: Final seat allocations. If allocated a seat, you must choose one of two options:
+   * **Option 1**: Accept the allocated seat, deposit your original documents, and opt out of further upgrading rounds.
+   * **Option 2**: Accept the allocated seat but state your intention to participate in the next round for upgrading. (If you get upgraded, the previous seat is auto-cancelled).
+3. **Open Round (Spot Counselling)**: Conducted for any vacant seats left after Round 2. Any qualified candidate (who has not blocked a seat in previous rounds) can participate, often leading to spot allocations for clinical seats at lower ranks.
+
+*Caution: Blocking a seat and failing to join carries strict penalties, including the forfeiture of your security deposit (typically Rs. 3,00,000) and disqualification from subsequent rounds.*
+
+---
+
+## What is the subject-wise weightage for the INI-CET exam?
+
+AIIMS New Delhi does not publish an official subject-wise blueprint for the INI-CET. However, analysis of recent exam sessions (such as May 2026 and November 2025) reveals a consistent pattern in subject-wise question distribution.
+
+The 200 questions of the INI-CET are heavily weighted toward clinical integrated case studies, making the clinical and paraclinical subjects the core rank-definers:
+
+| Subject Category | Subject Name | Estimated MCQs | Priority Level |
+| :--- | :--- | :--- | :--- |
+| **High-Yield Clinical** | Medicine & Allied (Pediatrics, Dermatology, Psychiatry) | 40–44 | High (Rank Maker) |
+| **High-Yield Clinical** | Surgery & Allied (Orthopedics, Anesthesia, Radiology) | 32–36 | High (Rank Maker) |
+| **High-Yield Clinical** | Obstetrics & Gynecology | 24–28 | High (Rank Maker) |
+| **Para-Clinical Core** | Pathology | 20–24 | High |
+| **Para-Clinical Core** | Pharmacology | 16–18 | High |
+| **Para-Clinical Core** | Microbiology | 14–16 | Medium |
+| **Pre-Clinical Core** | Anatomy | 12–14 | Medium |
+| **Pre-Clinical Core** | Physiology | 10–12 | Medium |
+| **Pre-Clinical Core** | Biochemistry | 8–10 | Low |
+| **Specialist Para-Clinical**| Social & Preventive Medicine (SPM / PSM) | 10–12 | Medium |
+| **Clinical Specialties** | Ophthalmology | 6–8 | Low |
+| **Clinical Specialties** | ENT (Otorhinolaryngology) | 6–8 | Low |
+| **Para-Clinical Core** | Forensic Medicine & Toxicology (FMT) | 4–6 | Low |
 
 ---
 
@@ -129,6 +183,28 @@ By aligning your preparation with a structured [NEET PG 2026 preparation strateg
 
 ---
 
+## Anatomy of an INI-CET Question: Integrated Clinical Vignette
+
+To understand how INI-CET questions differ from standard recalls, let us deconstruct a typical high-yield clinical case vignette. Instead of asking a direct factual question about a drug or sign, the AIIMS paper tests multiple disciplines (Pathology, Microbiology, and Medicine) in a single question.
+
+### The Clinical Vignette
+*A 32-year-old male presenting with high-grade fever, severe headache, and neck stiffness for 3 days is brought to the emergency department. On examination, he has a positive Kernig's sign. CSF analysis shows a pressure of 280 mm H~2~O, white blood cell count of 1,200/µL (90% neutrophils), protein level of 180 mg/dL, and glucose level of 15 mg/dL. Gram stain reveals Gram-negative, kidney-bean-shaped diplococci.*
+
+### Deconstructing the Options:
+* **The Diagnosis**: The CSF profile (high neutrophils, high protein, extremely low glucose) indicates **Acute Bacterial Meningitis**. The Gram stain (Gram-negative kidney-bean diplococci) specifically identifies **Neisseria meningitidis**^12^.
+* **Option A: Ceftriaxone (Empiric Choice)**: Ceftriaxone is a third-generation cephalosporin that is the drug of choice due to its excellent CSF penetration. This represents the *Pharmacology* clinical correlation.
+* **Option B: Latex Agglutination (Rapid Diagnostics)**: This tests capsular antigens in CSF and represents the *Microbiology* rapid diagnostic link.
+* **Option C: Waterhouse-Friderichsen Syndrome (Pathological Complication)**: In severe cases, meningococcemia leads to bilateral adrenal hemorrhage and shock. This represents the *Pathology* morphological link.
+
+When practicing this PYQ on OpenMedQ, you should not just click Ceftriaxone and move on. You must active-recall:
+1. *What would the CSF profile look like for Viral Meningitis?* (Normal glucose, lymphocytic predominance).
+2. *What is the mechanism of action of Ceftriaxone?* (Inhibits bacterial cell wall synthesis by binding to penicillin-binding proteins).
+3. *What is the prophylaxis drug of choice for close contacts?* (Rifampicin or Ciprofloxacin).
+
+By deconstructing the vignette this way, you reinforce four distinct clinical facts in a single practice session.
+
+---
+
 ### About the Author
 
 This guide was compiled by the **OpenMedQ Team**, in collaboration with post-graduate residents who have successfully ranked in the top 1^st^ percentile of AIIMS PG entrance exams. All registration steps, marking schemes, and candidate statistics are cross-referenced with official bulletins from AIIMS Exams and standard medical education blueprints.
@@ -148,6 +224,7 @@ This guide was compiled by the **OpenMedQ Team**, in collaboration with post-gra
 9. AIIMS exams. (2025). *List of Qualified Candidates in INI-CET January 2026 Session (Held on 09-11-2025)*.
 10. AIIMS Exams Section. (2026). *Scheme of Examination and Tie-Breaking Methodologies for INI-CET PG Exams*.
 11. NEET PG AI / Zynerd. (2026). *AIIMS MDS Stream Marking Scheme and Negative Marks Structure*.
+12. Tille, P. (2025). *Bailey & Scott's Diagnostic Microbiology* (16th ed.). Elsevier.
 
 ---
 
