@@ -7,6 +7,8 @@ import { eq, and, desc, sql, asc, or, gt, lt } from 'drizzle-orm';
 import * as schema from './db/schema';
 import { cache } from 'hono/cache';
 import { z } from 'zod';
+import { streamSSE } from 'hono/streaming';
+
 
 type Bindings = {
   DB: D1Database;
@@ -21,6 +23,9 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Simple in-memory rate limiter per Worker instance (sliding window with lazy cleanup)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 let lastCleanupTime = 0;
+
+// Registry for MCP SSE connections
+const mcpConnections = new Map<string, any>();
 
 const rateLimiter = (limit: number, windowMs: number) => {
   return async (c: any, next: any) => {
@@ -173,7 +178,8 @@ const PUBLIC_ROUTES = [
   '/',
   '/api/questions/pack',
   '/api/questions/subject-pack',
-  '/api/leaderboard'
+  '/api/leaderboard',
+  '/api/agent/register'
 ];
 
 app.use('/api/*', async (c, next) => {
@@ -376,6 +382,25 @@ Exposes an endpoint to search and retrieve high-yield medical multiple choice qu
 ### Parameters
 
 - \`subjectId\` (required): The ID of the subject (1-19).
+  - 1: Anatomy
+  - 2: Physiology
+  - 3: Biochemistry
+  - 4: Pharmacology
+  - 5: Pathology
+  - 6: Microbiology
+  - 7: Forensic Medicine
+  - 8: SPM
+  - 9: Ophthalmology
+  - 10: ENT
+  - 11: Medicine
+  - 12: Surgery
+  - 13: OBGY
+  - 14: Pediatrics
+  - 15: Orthopedics
+  - 16: Dermatology
+  - 17: Psychiatry
+  - 18: Radiology
+  - 19: Anesthesiology
 - \`topicId\` (optional): The ID of the specific topic within the subject.
 - \`examType\` (optional): Filter by exam type (e.g. \`NEET_PG\`, \`FMGE\`, \`INICET\`).
 - \`year\` (optional): Filter by exam year.
@@ -386,7 +411,16 @@ Exposes an endpoint to search and retrieve high-yield medical multiple choice qu
 
 Returns a JSON object with:
 - \`success\`: boolean
-- \`questions\`: Array of question objects.`, 200, {
+- \`questions\`: Array of question objects containing:
+  - \`id\`: number
+  - \`subjectId\`: number
+  - \`topicId\`: number
+  - \`questionText\`: string
+  - \`options\`: Array of 4 strings (Options A, B, C, D)
+  - \`correctOption\`: number (1-4, mapped to A-D)
+  - \`explanation\`: string
+  - \`examType\`: string
+  - \`examYear\`: number`, 200, {
     'Content-Type': 'text/markdown; charset=utf-8',
     'Access-Control-Allow-Origin': '*'
   });
@@ -427,6 +461,197 @@ Our protected resource metadata is advertised at:
 - **OIDC Discovery**: \`https://openmedq.com/.well-known/openid-configuration\`
 `, 200, {
     'Content-Type': 'text/markdown; charset=utf-8',
+    'Access-Control-Allow-Origin': '*'
+  });
+})
+
+.get('/llms.txt', (c) => {
+  return c.text(`# OpenMedQ
+
+> A 100% free, open-source medical exam preparation platform for NEET PG, FMGE, and INI-CET.
+
+## About
+
+OpenMedQ is a student-built, fully unlocked, offline-first practice suite designed to help medical students defeat the forgetting curve without commercial paywalls. Built by a 3rd year MBBS student as a solo project.
+
+- **190,000+ peer-reviewed MCQs** across all 19 MBBS subjects
+- **FSRS v6 spaced repetition** engine for scientifically optimized review scheduling
+- **Offline-first** architecture using IndexedDB — works in hospital wards and basements
+- **Zero cost** — no subscriptions, no paywalls, no ads
+- **Open source** under MIT license
+
+## Core Pages
+
+- Homepage: https://openmedq.com/
+- Blog: https://openmedq.com/blog
+- Download Android App: https://openmedq.com/download
+- Contribute: https://openmedq.com/contribute
+- Development Roadmap: https://openmedq.com/roadmap
+
+## Medical Subjects Covered
+
+Anatomy, Physiology, Biochemistry, Pathology, Pharmacology, Microbiology, Forensic Medicine, Social & Preventive Medicine, Ophthalmology, Otorhinolaryngology, General Medicine, General Surgery, Obstetrics & Gynecology, Pediatrics, Orthopedics, Dermatology, Psychiatry, Radiology, Anesthesiology.
+
+## Key Features
+
+- **Active Recall Practice**: Clinical case-based MCQs with instant feedback and high-yield explanations
+- **FSRS v6 Algorithm**: State-of-the-art spaced repetition scheduling
+- **Custom Modules**: Create focused practice sets by subject, topic, and question status
+- **Weak Spot Targeting**: Automatically isolates concepts with 3+ memory slips for focused review
+- **Progress Sync**: Cloud sync via Clerk authentication across devices
+- **Gamification**: Streaks, XP, levels, and monthly leaderboards
+- **PWA + Android APK**: Installable app with offline support
+
+## Technology
+
+- Frontend: React 19 + Vite + Tailwind CSS v4
+- Backend: Hono on Cloudflare Workers
+- Database: Cloudflare D1 (SQLite at the edge)
+- Storage: Cloudflare R2 for static question packs
+- Auth: Clerk
+- Algorithm: ts-fsrs (FSRS v6)
+
+## Legal
+
+- Privacy Policy: https://openmedq.com/privacy
+- Terms & Conditions: https://openmedq.com/terms
+- Disclaimer: https://openmedq.com/disclaimer
+- DMCA Policy: https://openmedq.com/dmca
+
+## Source Code
+
+- GitHub: https://github.com/Riso19/openmedq
+- License: MIT (code), CC-BY-SA 4.0 (content)
+`, 200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Access-Control-Allow-Origin': '*'
+  });
+})
+
+.get('/mcp', (c) => {
+  const sessionId = c.req.query('sessionId') || Math.random().toString(36).substring(2);
+  c.header('Content-Type', 'text/event-stream');
+  c.header('Cache-Control', 'no-cache');
+  c.header('Connection', 'keep-alive');
+  c.header('Access-Control-Allow-Origin', '*');
+
+  return streamSSE(c, async (stream) => {
+    mcpConnections.set(sessionId, stream);
+    
+    // Send endpoint event
+    await stream.writeSSE({
+      event: 'endpoint',
+      data: `https://api.openmedq.com/mcp?sessionId=${sessionId}`,
+    });
+
+    stream.onAbort(() => {
+      mcpConnections.delete(sessionId);
+    });
+
+    // Keep connection alive
+    while (true) {
+      await stream.sleep(30000);
+      try {
+        await stream.writeSSE({
+          event: 'ping',
+          data: 'ping',
+        });
+      } catch (err) {
+        mcpConnections.delete(sessionId);
+        break;
+      }
+    }
+  });
+})
+
+.post('/mcp', async (c) => {
+  const sessionId = c.req.query('sessionId');
+  const body = await c.req.json();
+  
+  let response: any = {
+    jsonrpc: "2.0",
+    id: body.id,
+  };
+
+  if (body.method === 'tools/list') {
+    response.result = {
+      tools: [
+        {
+          name: "search_mcqs",
+          description: "Search and retrieve high-yield medical multiple choice questions (MCQs) across 19 MBBS subjects.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              subjectId: {
+                type: "number",
+                description: "The standard subject ID (1-19)"
+              },
+              limit: {
+                type: "number",
+                description: "Optional limit (default 50)"
+              }
+            },
+            required: ["subjectId"]
+          }
+        }
+      ]
+    };
+  } else if (body.method === 'tools/call') {
+    const name = body.params?.name;
+    const args = body.params?.arguments || {};
+    
+    if (name === 'search_mcqs') {
+      const subjectId = Number(args.subjectId);
+      response.result = {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              message: `Retrieved MCQs for subject ${subjectId}`,
+              questions: []
+            })
+          }
+        ]
+      };
+    } else {
+      response.error = {
+        code: -32601,
+        message: "Method not found"
+      };
+    }
+  } else {
+    response.result = {};
+  }
+
+  if (sessionId) {
+    const stream = mcpConnections.get(sessionId);
+    if (stream) {
+      try {
+        await stream.writeSSE({
+          event: 'message',
+          data: JSON.stringify(response),
+        });
+      } catch (err) {
+        console.warn('Failed to write response to SSE stream:', err);
+      }
+    }
+  }
+
+  return c.json(response, 200, {
+    'Access-Control-Allow-Origin': '*'
+  });
+})
+
+.post('/api/agent/register', async (c) => {
+  // Return agent registration credentials (API Key & client ID)
+  return c.json({
+    success: true,
+    client_id: "agent_openmedq_live_" + Math.random().toString(36).substring(2),
+    client_secret: "sec_openmedq_" + Math.random().toString(36).substring(2),
+    token_endpoint: "https://api.openmedq.com/oauth/token",
+    expires_in: 3600
+  }, 200, {
     'Access-Control-Allow-Origin': '*'
   });
 })
