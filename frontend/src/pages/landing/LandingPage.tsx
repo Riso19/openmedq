@@ -504,28 +504,33 @@ export function LandingPage({
             You spend 12 hours on clinical wards, get back to your room exhausted, open a question bank, and realize you forgot last week's notes. It makes you feel like an imposter. But it is not your fault. I built OpenMedQ as a fully unlocked, offline-first practice suite to help us defeat the forgetting curve without commercial paywalls.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-            <button
-              onClick={onStartPractice}
-              className="flex-1 bg-clay-ink hover:bg-neutral-800 text-white font-bold h-12 rounded-clay-md shadow-sm active:scale-98 transition-all duration-300 flex items-center justify-center gap-2 text-sm cursor-pointer"
-            >
-              <SignedIn>
-                <span>Enter Practice Suite</span>
-              </SignedIn>
-              <SignedOut>
-                <span>Practice in Guest Mode</span>
-              </SignedOut>
-              <ArrowRight className="w-4.5 h-4.5" />
-            </button>
-            
-            <SignedOut>
+          <div className="w-full max-w-md">
+            <SignedIn>
               <button
-                onClick={onSignIn}
-                className="flex-1 bg-clay-pink/10 border border-clay-pink/20 hover:bg-clay-pink/20 text-clay-pink font-bold h-12 rounded-clay-md active:scale-98 transition-all duration-300 flex items-center justify-center gap-2 text-sm cursor-pointer shadow-sm hover:shadow"
+                onClick={onStartPractice}
+                className="w-full bg-clay-ink hover:bg-neutral-800 text-white font-bold h-12 rounded-clay-md shadow-sm active:scale-98 transition-all duration-300 flex items-center justify-center gap-2 text-sm cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-clay-pink fill-current animate-pulse" />
-                <span>Sign Up to Sync Streaks</span>
+                <span>Enter Practice Suite</span>
+                <ArrowRight className="w-4.5 h-4.5" />
               </button>
+            </SignedIn>
+            <SignedOut>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={onStartPractice}
+                  className="bg-clay-ink hover:bg-neutral-800 text-white font-bold h-12 rounded-clay-md shadow-sm active:scale-98 transition-all duration-300 flex items-center justify-center gap-1.5 text-xs sm:text-sm cursor-pointer"
+                >
+                  <span>Practice Guest</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={onSignIn}
+                  className="bg-clay-pink/10 border border-clay-pink/20 hover:bg-clay-pink/20 text-clay-pink font-bold h-12 rounded-clay-md active:scale-98 transition-all duration-300 flex items-center justify-center gap-1.5 text-xs sm:text-sm cursor-pointer shadow-sm hover:shadow"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-clay-pink fill-current animate-pulse" />
+                  <span>Sync Streaks</span>
+                </button>
+              </div>
             </SignedOut>
           </div>
         </div>
