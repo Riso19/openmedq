@@ -38,3 +38,8 @@
 /auth.md
   Content-Type: text/markdown; charset=utf-8
   Access-Control-Allow-Origin: *
+
+/ads.txt
+  Content-Type: text/plain; charset=utf-8
+  Access-Control-Allow-Origin: *
+

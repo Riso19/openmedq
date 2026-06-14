@@ -238,6 +238,30 @@ A 100% free, open-source medical exam preparation platform for NEET PG, FMGE, an
   });
 })
 
+.get('/ads.txt', (c) => {
+  return c.text(`# OpenMedQ is a non-commercial, ad-free educational platform.
+# No ad networks or DSPs are authorized to sell ads on this domain.
+`, 200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Access-Control-Allow-Origin': '*'
+  });
+})
+
+.get('/robots.txt', (c) => {
+  return c.text(`User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /stats
+Disallow: /leaderboard
+
+Sitemap: https://openmedq.com/sitemap.xml
+`, 200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Access-Control-Allow-Origin': '*'
+  });
+})
+
 // Well-known endpoints for AI Agent Discovery
 
 .get('/.well-known/api-catalog', (c) => {
