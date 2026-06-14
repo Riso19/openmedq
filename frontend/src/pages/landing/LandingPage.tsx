@@ -496,7 +496,7 @@ export function LandingPage({
           <h1 className="font-rubik text-3xl sm:text-5xl md:text-[56px] leading-[1.1] md:leading-[1.05] font-medium text-clay-ink tracking-[-0.04em] mb-6 w-full">
             <span className="block text-xs sm:text-sm md:text-base font-bold uppercase tracking-widest text-clay-pink mb-4">
               Free Spaced Repetition NEET PG, FMGE & INI-CET Question Bank
-            </span>
+            </span>{" "}
             Your brain is not a sieve. The prep system is just broken.
           </h1>
 
