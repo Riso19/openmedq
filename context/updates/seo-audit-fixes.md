@@ -34,3 +34,8 @@
 - **Sitemap (`scripts/generate-sitemap.mjs`)**: Automatically compiles `dist/sitemap.xml` after each build by reading static routes and parsing slugs from `posts.json`.
 - **Simplifying OG images**: Replaced references to dynamic per-post social preview images (which are not generated) with the default `/og-preview.png` across `BlogPost.tsx` and `prerender.mjs` to ensure consistent and working social media cards.
 - **Build Integration (`package.json`)**: Hooked scripts into the `"build"` pipeline: `tsc -b && vite build && node scripts/generate-sitemap.mjs && node scripts/prerender.mjs`.
+
+### URL Canonicalization & Header Hierarchy (14 June 2026 Update)
+- **H1 Tag Run-on Fix (`LandingPage.tsx`)**: Resolved a text concatenation issue where the SEO pre-header `<span>` and the main headline inside the `<h1>` tag ran together without spacing (`Question BankYour brain...`). Added a JSX space `{" "}` to ensure search engines and screen readers parse them as separate words/phrases (`Question Bank Your brain...`).
+- **Index.html Redirect (`_redirects`)**: Added `/index.html / 301` at the top of the redirection rules. This forces a server-side HTTP 301 redirect from `/index.html` to the root `/`, consolidating SEO ranking authority (link equity) and preventing duplicate content indexing.
+

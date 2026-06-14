@@ -12,6 +12,14 @@ Single Page Applications (SPAs) use a catch-all route rule (e.g., `/* /index.htm
 ### 2. Missing Security Headers on Frontend Assets
 While the Hono backend is configured with global security headers, the frontend static assets served by Cloudflare Pages require separate configuration to guard against clickjacking, MIME-sniffing, and cross-site scripting (XSS).
 
+### 3. Clerk SDK Web Worker Blocker (CSP)
+* **Problem**: When Clerk SDK starts up in the browser, it attempts to spawn a Web Worker using a `blob:` URL. In the absence of a `worker-src` directive in the Content Security Policy, browsers fallback to the restricted `script-src` directive, blocking the creation of the worker and throwing a CSP violation error.
+* **Remediation**: Explicitly add `worker-src 'self' blob:;` to the CSP header definition in `_headers`.
+
+### 4. SEO URL Duplication for `/index.html`
+* **Problem**: In SPA environments, the root path `/` and `/index.html` resolve to the exact same page content. Search engine crawlers index these as distinct duplicates, which dilutes SEO ranking authority (link equity).
+* **Remediation**: Add a 301 redirection rule for `/index.html` at the top of the `_redirects` file before the catch-all SPA route.
+
 ---
 
 ## 🛠️ Standards and Remediation
@@ -31,3 +39,12 @@ Deploy a custom [_headers](file:///Users/sain/development/openmedq/frontend/publ
   ```http
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://clerk.openmedq.com; connect-src 'self' https://api.openmedq.com https://clerk.openmedq.com https://cdn.openmedq.com https://assets.openmedq.com https://api.github.com; img-src 'self' data: https://images.clerk-cdn.com https://img.clerk.com https://cdn.openmedq.com https://assets.openmedq.com https://images.unsplash.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://clerk.openmedq.com; worker-src 'self' blob:; frame-ancestors 'none'; upgrade-insecure-requests;
   ```
+
+### 3. Clerk Web Worker CSP Support
+Always ensure `worker-src 'self' blob:;` is included in the CSP. This is necessary because Clerk utilizes dynamic inline blobs for sandboxed background execution.
+
+### 4. URL Canonicalization Redirect for `/index.html`
+Place the `/index.html / 301` redirect rule at the very top of `_redirects` so it takes precedence over the wildcard `/*` redirect rule:
+```text
+/index.html / 301
+```

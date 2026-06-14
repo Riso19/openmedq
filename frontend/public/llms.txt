@@ -22,6 +22,8 @@ OpenMedQ is a student-built, fully unlocked, offline-first practice suite design
 
 ## Blog Posts
 
+- [What is the FMGE Exam? Guide to Results, Attempts & NExT](https://openmedq.com/blog/what-is-fmge-exam-results-attempts-next)
+- [NEET PG PYQs: Do They Repeat? (Free 2018-2025 Guide)](https://openmedq.com/blog/neet-pg-pyqs-repetition-pdf-download)
 - [NEET PG 2026 Preparation Strategy: An Evidence-Based Study Plan](https://openmedq.com/blog/neet-pg-2026-preparation-strategy)
 - [The Science of Spaced Repetition: Why It Works for Medical Students](https://openmedq.com/blog/spaced-repetition-science-for-medical-students)
 - [Why OpenMedQ Is 100% Free (And Always Will Be)](https://openmedq.com/blog/why-openmedq-is-free)
