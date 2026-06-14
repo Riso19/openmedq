@@ -22,6 +22,7 @@ OpenMedQ is a student-built, fully unlocked, offline-first practice suite design
 
 ## Blog Posts
 
+- [INI-CET Exam Guide: Dates, Registration, Results & Strategy](https://openmedq.com/blog/inicet-exam-registration-results-dates)
 - [What is the FMGE Exam? Guide to Results, Attempts & NExT](https://openmedq.com/blog/what-is-fmge-exam-results-attempts-next)
 - [NEET PG PYQs: Do They Repeat? (Free 2018-2025 Guide)](https://openmedq.com/blog/neet-pg-pyqs-repetition-pdf-download)
 - [NEET PG 2026 Preparation Strategy: An Evidence-Based Study Plan](https://openmedq.com/blog/neet-pg-2026-preparation-strategy)
