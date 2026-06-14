@@ -15,7 +15,7 @@ This directory logs updates, deprecated patterns, and common mistakes encountere
   * **Description**: Custom module timing patterns for Indian medical QBanks (Stopwatch, Countdown per question, and Total countdown).
 * [common_mistakes_to_avoid.md](file:///Users/sain/development/openmedq/context/updates/common_mistakes_to_avoid.md):
   * **Category**: Common mistakes to avoid.
-  * **Description**: Checklist of recurrent mistakes (such as missing type declarations in browser contexts, duplicate declarations, empty Wrangler environment variables, 0-vs-1 indexing option key mismatches, and missing IndexedDB caching for online custom practice questions).
+  * **Description**: Checklist of recurrent mistakes (such as missing type declarations in browser contexts, duplicate declarations, empty Wrangler environment variables, 0-vs-1 indexing option key mismatches, missing IndexedDB caching for online custom practice questions, unvalidated WebMCP tool inputs, and hardcoded/placeholder agent-skills hashes).
 * [dashboard_structure_standards.md](file:///Users/sain/development/openmedq/context/updates/dashboard_structure_standards.md):
   * **Category**: New information learned via web research.
   * **Description**: PG QBank dashboard layouts, professional phases grouping, and active recall triggers.

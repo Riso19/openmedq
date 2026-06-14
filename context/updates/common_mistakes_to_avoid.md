@@ -85,3 +85,19 @@ To prevent repeating code defects and build warnings/errors, adhere to the follo
 * **Mistake**: Iterating over a global `Map` of IP entries on every incoming request when the map exceeds a size limit (lazy cleanup).
 * **Problem**: Under a large scraping sweep or distributed attack with thousands of unique IPs, the map remains larger than the limit, causing the Worker to iterate through the entire map on every single request. On Cloudflare's free tier, this consumes CPU cycles and triggers the strict 10ms CPU time limit, blocking legitimate users with 500 errors.
 * **Fix**: Throttle the cleanup loop to run at most once every 10 seconds, and add a hard limit (e.g. 2000 entries) where the entire map is cleared in O(1) time if it grows too large. This protects Worker isolates from memory leaks and CPU timeouts.
+
+### 17. Unvalidated Input in WebMCP Custom Tool Handlers
+* **Mistake**: Using inputs (e.g., `args.subjectId`) directly in application state setters or configs without validating their type and range in the WebMCP `execute` callback.
+* **Problem**: Model agents can invoke tools with invalid or out-of-range arguments (e.g. `subjectId` of `0`, `-1`, or `99`), which bypasses client-side form validations and can corrupt state or cause React hydration errors.
+* **Fix**: Always validate parameters inside the tool's `execute` callback. For example, verify that `subjectId` is a number and lies between 1 and 19 inclusive, returning a clear error response if invalid:
+  ```typescript
+  const subId = Number(args.subjectId);
+  if (isNaN(subId) || subId < 1 || subId > 19) {
+    return { success: false, error: "Invalid subjectId. The subjectId must be a number between 1 and 19 inclusive." };
+  }
+  ```
+
+### 18. Hardcoded/Placeholder Hashes in Agent-Skills Discovery Indices
+* **Mistake**: Hardcoding placeholder hashes or repeating-byte patterns for `sha256` integrity fields in `.well-known` configuration files (e.g. `index.json`).
+* **Problem**: Agent discovery engines and standard integrity checks reject placeholders as invalid SHA256 digests or content mismatches, failing validation.
+* **Fix**: Fetch the response content from the target URL, compute the actual SHA256 hash (e.g., using `openssl dgst -sha256`), and use the computed hash in the configuration index. If the target URL requires query parameters (such as `subjectId`), the base URL endpoint might return a validation error (e.g., `400 Bad Request`). In that case, hash the exact error response payload returned by that base URL, as it is the payload received when agents hit the base URL without arguments.
